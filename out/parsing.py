@@ -83,7 +83,7 @@ class Parse:
 
     def __str__(self):
         child_strings = [str(child) for child in self.children]
-        return '(%s %s)' % (self.rule.lhs, ' '.join(child_strings))
+        return '(%s(%f) %s)' % (self.rule.lhs, self.rule.score, ' '.join(child_strings))
 
 def validate_parse(parse):
     assert isinstance(parse.rule, Rule), 'Not a Rule: %s' % parse.rule
@@ -205,14 +205,14 @@ def add_rule_containing_optional(grammar, rule):
     suffix = rule.rhs[(first + 1):]
     # First variant: the first optional element gets deoptionalized.
     deoptionalized = (rule.rhs[first][1:],)
-    add_rule(grammar, Rule(rule.lhs, prefix + deoptionalized + suffix, rule.sem))
+    add_rule(grammar, Rule(rule.lhs, prefix + deoptionalized + suffix, rule.sem, rule.score))
     # Second variant: the first optional element gets removed.
     # If the semantics is a value, just keep it as is.
     sem = rule.sem
     # But if it's a function, we need to supply a dummy argument for the removed element.
     if isinstance(rule.sem, FunctionType):
         sem = lambda sems: rule.sem(sems[:first] + [None] + sems[first:])
-    add_rule(grammar, Rule(rule.lhs, prefix + suffix, sem))
+    add_rule(grammar, Rule(rule.lhs, prefix + suffix, sem, rule.score))
 
 def add_n_ary_rule(grammar, rule):
     """
@@ -245,7 +245,7 @@ def add_n_ary_rule(grammar, rule):
     category = add_category('%s_%s' % (rule.lhs, rule.rhs[0]))
     add_rule(grammar, Rule(category, rule.rhs[1:], lambda sems: sems))
     add_rule(grammar, Rule(rule.lhs, (rule.rhs[0], category),
-                           lambda sems: apply_semantics(rule, [sems[0]] + sems[1])))
+                           lambda sems: apply_semantics(rule, [sems[0]] + sems[1]), rule.score))
 
 def parse_input(grammar, input):
     """
