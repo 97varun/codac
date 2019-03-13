@@ -51,3 +51,11 @@ class NumberAnnotator(Annotator):
             except ValueError:
                 pass
         return []
+
+class PackageTypeAnnotator(Annotator):
+    def annotate(self, tokens):
+        if len(tokens) == 1:
+            if tokens[0] in ['stdlib', 'stdio', 'string', 'time',
+                    'stdbool', 'stdarg', 'math']:
+                return[('$PackageName', tokens[0])]
+        return []
