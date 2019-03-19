@@ -211,7 +211,7 @@ def add_rule_containing_optional(grammar, rule):
     # If the semantics is a value, just keep it as is.
     sem = rule.sem
     # But if it's a function, we need to supply a dummy argument for the removed element.
-    if isinstance(rule.sem, FunctionType):
+    if isinstance(rule.sem, FunctionType) or isinstance(rule.sem, itemgetter):
         sem = lambda sems: rule.sem(sems[:first] + [None] + sems[first:])
     add_rule(grammar, Rule(rule.lhs, prefix + suffix, sem, rule.score))
 

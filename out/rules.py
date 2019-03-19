@@ -52,8 +52,8 @@ pack_rules = [
     Rule('$PrePackName', 'library', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'package', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'library package', {'construct': 'package'}, 2.5),
-    Rule('$Called', 'called', 1.5),
-    Rule('$Called', 'name', 1.5),
+    Rule('$Called', 'called', {}, 1.5),
+    Rule('$Called', 'name', {}, 1.5),
 ]
 
 init_rules = [
@@ -115,9 +115,9 @@ arr_size_rules = [
     Rule('$ArrSizeMention', '$Optionals $Size $ArrSize', itemgetter(2), 1.0),
     Rule('$ArrSize', '$Number', lambda sems: {'size': str(sems[0])}, 0.75),
     Rule('$ArrSize', '$Number $By $Number', lambda sems: {'size': (sems[0], sems[2])}, 1.5),
-    Rule('$Size', 'size', 1.0),
-    Rule('$By', 'by', 0.25),
-    Rule('$By', 'cross', 0.25),
+    Rule('$Size', 'size', {}, 1.0),
+    Rule('$By', 'by', {}, 0.25),
+    Rule('$By', 'cross', {}, 0.25),
 ]
 # TODO : PARAMETERS
 func_name_rules = [
