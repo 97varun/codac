@@ -1,3 +1,5 @@
+import json
+
 class Error():
     def __init__(self, err=''):
         self.err = err
@@ -5,29 +7,31 @@ class Error():
 
 def declare(sem):
     if 'construct' in sem:
+        result = {'construct': sem['construct']}
         if sem['construct'] == 'variable':
             if 'name' not in sem:
                 return Error('name')
             elif 'type' not in sem:
                 return Error('type')
             else:
-                return '{0} {1};'.format(sem['type'], sem['name'])
+                result.update({'code': '{0} {1};'.format(sem['type'], sem['name'])})
         elif sem['construct'] == 'array':
             if 'name' not in sem:
                 return Error('name')
             elif 'type' not in sem:
                 return Error('type')
             elif 'size' not in sem:
-                return '{0} *{1}'.format(sem['type'], sem['name'])
+                result.update({'code': '{0} *{1}'.format(sem['type'], sem['name'])})
             else:
-                return '{0} {1}[{2}]'.format(sem['type'], sem['name'], ']['.join(map(str, sem['size'])))
+                result.update({'code': '{0} {1}[{2}]'.format(sem['type'], sem['name'], ']['.join(map(str, sem['size'])))})
         elif sem['construct'] == 'function':
             if 'name' not in sem:
                 return Error('name')
             elif 'type' not in sem:
-                return '{0} {1}() {{\n\n}}'.format('void', sem['name'])
+                result.update({'code': '{0} {1}() {{\n\n}}'.format('void', sem['name'])})
             else:
-                return '{0} {1}() {{\n\n}}'.format(sem['type'], sem['name'])
+                result.update({'code': '{0} {1}() {{\n\n}}'.format(sem['type'], sem['name'])})
+        return result
     else:
         pass
 
@@ -38,7 +42,7 @@ def initialization(sem):
     elif 'rhs' not in sem:
         return Error('rhs')
     else:
-        return '{0} = {1};'.format(sem['lhs'][1], sem['rhs'][1])
+        return {'construct': 'initialization', 'code': '{0} = {1};'.format(sem['lhs'][1], sem['rhs'][1])}
 
 
 def func_call(sem):
@@ -56,31 +60,28 @@ def func_call(sem):
                 else:
                     pass
                 p += val
-            return '{0}({1});'.format(sem['name'], (', ').join(p))
+            return {'construct': 'func_call', 'code': '{0}({1});'.format(sem['name'], (', ').join(p))}
             # else:
             #     return '#include "{0}.h"'.format(sem['name'])
         else:
-                return '{0}();'.format(sem['name'])
+                return {'construct': 'func_call', 'code': '{0}();'.format(sem['name'])}
 
 
 def lib_include(sem):
     if 'name' not in sem:
         return Error('name')
     else:
-        # if 'construct' in sem:
         if sem['type'] == 'lib':
-            return '#include <{0}.h>'.format(sem['name'])
+            return {'construct': 'include', 'code': '#include <{0}.h>'.format(sem['name'])}
         elif sem['type'] == 'own':
-            return '#include "{0}.h"'.format(sem['name'])
-        else:
-            pass
+            return {'construct': 'include', 'code': '#include "{0}.h"'.format(sem['name'])}
 
 
 def return_stmt(sem):
     if 'name' not in sem:
         return Error('name')
     else:
-        return 'return {0};'.format(sem['name'])
+        return {'construct': 'return_stmt', 'code': 'return {0};'.format(sem['name'])}
 
 
 def expression(sem):
@@ -112,7 +113,7 @@ def generate_code(sems):
                 code = lib_include(sem)
             elif sem['request'] == 'return':
                 code = return_stmt(sem)
-
+            
             if isinstance(code, Error):
                 pass
                 # print('missing %s' % code.err)

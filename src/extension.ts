@@ -36,18 +36,24 @@ export function activate(context: vscode.ExtensionContext) {
 		recognizer.stdout.on('data', function(data: string) {
 			let JSONdata = JSON.parse(data);
 			console.log(JSONdata);
-			console.log(JSONdata.hasOwnProperty('status'));
 			if (JSONdata.hasOwnProperty('status') && JSONdata.status === 'ready') {
 				vscode.window.showInformationMessage(`${JSONdata.status}`);
+			} else if (JSONdata.hasOwnProperty('error')) {
+				let tree = [new SampleNode(JSONdata.input, []), new SampleNode(JSONdata.error, [])];
+				sampleTree.setTree(tree);
 			} else {
 				let tree = [new SampleNode(JSONdata.input, [])];
 				for (let i = 1; i <= JSONdata.output.length; ++i) {
-					tree.push(new SampleNode(`${i}. ${JSONdata.output[i - 1]}`, []));
+					tree.push(new SampleNode(`${i}. ${JSONdata.output[i - 1].code} (${JSONdata.output[i - 1].construct})`, []));
 				}
-				sampleTree.setTree(
-					tree
-				);
-				ed.insertText(JSONdata.output[0] + '\n');
+				sampleTree.setTree(tree);
+				ed.insertText(JSONdata.output[0].code + '\n');
+				if (JSONdata.output[0].construct === 'function') {
+					const position = ed.getCursorPosition();
+					console.log(position);
+					let newPosition = position.with(position.line + 1, 0);
+					ed.moveCursor(newPosition);
+				}
 			}
 		});
 
@@ -134,5 +140,24 @@ class Editor {
 				}
 			);
 		}
+	}
+
+	public moveCursor(position: vscode.Position) {
+		if (vscode.window.activeTextEditor !== undefined) {
+			const editor = vscode.window.activeTextEditor;
+
+			var newSelection = new vscode.Selection(position, position);
+			editor.selection = newSelection;
+		}
+	}
+
+	public getCursorPosition(): vscode.Position {
+		if (vscode.window.activeTextEditor) {
+			const editor = vscode.window.activeTextEditor;
+			const position = editor.selection.active;
+
+			return position;
+		}
+		return new vscode.Position(0, 0);
 	}
 }

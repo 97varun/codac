@@ -24,7 +24,7 @@ def get_action(transcript):
     if parses:
         score_parses(parses)
     else:
-        return '{{"input": "{0}", "error": "could not parse"}}'.format(transcript)
+        return json.dumps({'input': transcript, 'error': 'could not parse'})
     parses_sems = [dict(y) for y in set(tuple(sorted(x.semantics.items())) for x in parses)]
     parses_sems.sort(key=lambda x: (len(x), x['score']), reverse=True)
 
@@ -33,7 +33,7 @@ def get_action(transcript):
     for code in codes:
         if code not in uniq_codes and code is not None:
             uniq_codes.append(code)
-    return '{{"input": "{0}", "output": {1}}}'.format(transcript, json.dumps(uniq_codes))
+    return json.dumps({'input': transcript, 'output': uniq_codes})
 
 
 if __name__ == "__main__":
