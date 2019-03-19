@@ -121,6 +121,7 @@ pack_ips = [
     'include package called SupportFunc',
     'include linked list',
 ]
+
 cond_ips = [
     'a less than 10',
     'program count greater than 20',
@@ -180,6 +181,16 @@ struct_ips = [
     'declare a structure with structure tag employee and variables emp1 and emp2',
     'create a structure employee with variables emp1 and emp2',
 ]
+
+loop_ips = [
+    'create a for loop with loop variable i',
+    'create a for loop with counter i of type int',
+    'define a loop having control variable i',
+    'create a for loop with counter of type int called i',
+    'declare a while loop with counter i of type int',
+    'run a for loop with loop counter i of type int',
+]
+
 '''
 loop_ips = [
     'create a for loop',
@@ -207,11 +218,3 @@ loop_ips = [
 ]
 #           -----> WITH PARAMETERS
 '''
-loop_ips = [
-    'create a for loop with loop variable i',
-    'create a for loop with counter i of type int',
-    'define a loop having control variable i',
-    'create a for loop with counter of type int called i',
-    'declare a while loop with counter i of type int',
-    'run a for loop with loop counter i of type int',
-]

@@ -148,7 +148,6 @@ func_name_rules = [
     Rule('$Return', 'return ?the value of', {}, 3.0),
     Rule('$Returns', 'returns', {}, 0.5),
     Rule('$Returns', '$Return', {}, 0.5),
-    
 ]
 
 func_call_rules = [
@@ -173,6 +172,8 @@ func_call_rules = [
     Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 1.0),
     Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 1.0),
 
+    Rule('$PreName', '$PreFnName $VariableName', itemgetter(1), 3.0),
+    Rule('$PreName', '$VariableName', itemgetter(0), 1.0),
     Rule('$Call', 'call', {}, 0.5),
     Rule('$Call', 'invoke', {}, 0.5),
     Rule('$Call', 'execute', {}, 0.5),
@@ -294,10 +295,10 @@ return_stmt_rules = [
            lambda sems:  merge_dicts({'name': sems[2]}, sems[1]), 2.5),
      Rule('$ReturnElements', '$PreName',
            lambda sems: {'name': sems[0]}, 1.5),
-     Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0),
-     Rule('$ReturnElement', 'array', {'type': 'array'}, 0),
-     Rule('$ReturnElement', 'string', {'type': 'string'}, 0),
-     Rule('$ReturnElement', '$Function', {'type': 'function'}, 0),
+     Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0.0),
+     Rule('$ReturnElement', 'array', {'type': 'array'}, 0.0),
+     Rule('$ReturnElement', 'string', {'type': 'string'}, 0.0),
+     Rule('$ReturnElement', '$Function', {'type': 'function'}, 0.0),
 ]
 
 dec_rules = decl_rules + dec_constructs
