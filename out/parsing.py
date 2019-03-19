@@ -3,6 +3,7 @@ from collections import defaultdict, Iterable
 from itertools import product
 from six import StringIO
 from types import FunctionType
+from operator import itemgetter
 
 MAX_CELL_CAPACITY = 1000  # upper bound on number of parses in one chart cell
 
@@ -100,7 +101,7 @@ def apply_semantics(rule, sems):
     # always be functions, never bare values.  That is, if instead of
     # Rule('$E', 'one', 1) we required Rule('$E', 'one', lambda sems: 1).
     # But that would be cumbersome.
-    if isinstance(rule.sem, FunctionType):
+    if isinstance(rule.sem, FunctionType) or isinstance(rule.sem, itemgetter):
         return rule.sem(sems)
     else:
         return rule.sem

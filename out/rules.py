@@ -1,21 +1,6 @@
 from parsing import parse_input, Grammar, Rule, Parse
 from annotators import *
-
-
-def sems_0(sems):
-    return sems[0]
-
-
-def sems_1(sems):
-    return sems[1]
-
-
-def sems_2(sems):
-    return sems[2]
-
-
-def sems_3(sems):
-    return sems[3]
+from operator import itemgetter
 
 
 def merge_dicts(d1, d2):
@@ -29,10 +14,10 @@ def merge_dicts(d1, d2):
 decl_rules = [
     Rule('$ROOT', '$Declare $Declaration',
          lambda sems: merge_dicts({'request': 'declare'}, sems[1])),
-    Rule('$Declare', 'declare', sems_0),
-    Rule('$Declare', 'create', sems_0),
-    Rule('$Declare', 'define', sems_0),
-    Rule('$Declaration', '$DeclarationElement', sems_0),
+    Rule('$Declare', 'declare', itemgetter(0)),
+    Rule('$Declare', 'create', itemgetter(0)),
+    Rule('$Declare', 'define', itemgetter(0)),
+    Rule('$Declaration', '$DeclarationElement', itemgetter(0)),
     Rule('$Declaration', '$DeclarationElement $DeclarationElement',
          lambda sems: merge_dicts(sems[0], sems[1])),
     Rule('$Declaration', '$DeclarationElement $DeclarationElement $DeclarationElement',
@@ -40,11 +25,11 @@ decl_rules = [
 ]
 
 dec_constructs = [
-    Rule('$DeclarationElement', '$DataTypeMention', sems_0),
-    Rule('$DeclarationElement', '$VariableNameMention', sems_0),
-    Rule('$DeclarationElement', '$Optionals $VariableNameMention', sems_1, 1.0),
-    # Rule('$DeclarationElement', '$Optionals $ArrayNameMention', sems_1, 1.0),
-    # Rule('$DeclarationElement', '$Optionals $FuncNameMention', sems_1, 1.0),
+    Rule('$DeclarationElement', '$DataTypeMention', itemgetter(0)),
+    Rule('$DeclarationElement', '$VariableNameMention', itemgetter(0)),
+    Rule('$DeclarationElement', '$Optionals $VariableNameMention', itemgetter(1), 1.0),
+    # Rule('$DeclarationElement', '$Optionals $ArrayNameMention', itemgetter(1), 1.0),
+    # Rule('$DeclarationElement', '$Optionals $FuncNameMention', itemgetter(1), 1.0),
 ]
 
 pack_rules = [
@@ -79,16 +64,16 @@ init_rules = [
     Rule('$Initialize', 'change'),
     Rule('$Initialize', 'update'),
     Rule('$Initialization', '$Lhs ?$Equal ?$To $Rhs', lambda sems: merge_dicts(sems[0], sems[-1])),
-    Rule('$Equal', 'equal', sems_0, 0.25),
-    Rule('$Equal', 'equals', sems_0, 0.25),
-    Rule('$To', 'to', sems_0, 0.25),
+    Rule('$Equal', 'equal', itemgetter(0), 0.25),
+    Rule('$Equal', 'equals', itemgetter(0), 0.25),
+    Rule('$To', 'to', itemgetter(0), 0.25),
 
     Rule('$Lhs', '$Hs', lambda sems: {'lhs': sems[0]}),
     Rule('$Rhs', '$Hs', lambda sems: {'rhs': sems[0]}),
     Rule('$Rhs', '$Number', lambda sems: {'rhs': ('value', sems[0])}, 1.0),
 
-    Rule('$Hs', '$Optionals $Hs', sems_1, 0.25),
-    Rule('$Hs', '$Hs $Optionals', sems_0, 0.25),
+    Rule('$Hs', '$Optionals $Hs', itemgetter(1), 0.25),
+    Rule('$Hs', '$Hs $Optionals', itemgetter(0), 0.25),
     Rule('$Hs', '$Variable $VariableName', lambda sems: ('name', sems[1])),
     Rule('$Hs', '$VariableName', lambda sems: ('name', sems[0])),
 
@@ -98,7 +83,7 @@ init_rules = [
 ]
 
 data_type_rules = [
-    Rule('$DeclarationElement', '$Optionals $DataTypeMention', sems_1, 1.0),
+    Rule('$DeclarationElement', '$Optionals $DataTypeMention', itemgetter(1), 1.0),
     Rule('$DataTypeMention', '$Type ?$Optionals $DataType', lambda sems: {'type': sems[2]}, 1.0),
     Rule('$DataTypeMention', '$DataType $Type', lambda sems: {'type': sems[0]}, 1.0),
     Rule('$DataTypeMention', '$DataType', lambda sems: {'type': sems[0]}, 0.0),
@@ -112,7 +97,7 @@ var_name_rules = [
          lambda sems: merge_dicts({'name': sems[1]}, sems[0]), 1.0),
     Rule('$VariableNameMention', '$PreVariable $PreVariable $VariableName',
          lambda sems: merge_dicts(merge_dicts({'name': sems[2]}, sems[0]), sems[1]), 1.7),
-    Rule('$PreVariable', '$Variable', sems_0, 0.0),
+    Rule('$PreVariable', '$Variable', itemgetter(0), 0.0),
     Rule('$Variable', 'variable', {'construct': 'variable'}, 1.0),    
     Rule('$PreVariable', '$Called', {}, 1.0),
     Rule('$PreVariable', 'name', {}, 1.0),
@@ -126,8 +111,8 @@ arr_name_rules = [
 arr_size_rules = [
     Rule('$DeclarationElement', '$Optionals $ArrSizeMention ?$DeclarationElement',
          lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
-    Rule('$ArrSizeMention', '?$Size $ArrSize', sems_1, 0),
-    Rule('$ArrSizeMention', '$Optionals $Size $ArrSize', sems_2, 1.0),
+    Rule('$ArrSizeMention', '?$Size $ArrSize', itemgetter(1), 0),
+    Rule('$ArrSizeMention', '$Optionals $Size $ArrSize', itemgetter(2), 1.0),
     Rule('$ArrSize', '$Number', lambda sems: {'size': str(sems[0])}, 0.75),
     Rule('$ArrSize', '$Number $By $Number', lambda sems: {'size': (sems[0], sems[2])}, 1.5),
     Rule('$Size', 'size', 1.0),
@@ -149,12 +134,12 @@ func_name_rules = [
 
     Rule('$PreFnName', '?with ?function name', {}, 1.0),
     Rule('$PreFnName', '$Called', {}, 1.0),
-    Rule('$FnDataTypeElement1', '$DataTypeMention', sems_0),
-    Rule('$FnDataTypeElement1', '$PreType $DataTypeMention', sems_1, 1.0),
-    Rule('$FnDataTypeElement', '$PreType $Returns $DataTypeMention', sems_2, 2.0),
+    Rule('$FnDataTypeElement1', '$DataTypeMention', itemgetter(0)),
+    Rule('$FnDataTypeElement1', '$PreType $DataTypeMention', itemgetter(1), 1.0),
+    Rule('$FnDataTypeElement', '$PreType $Returns $DataTypeMention', itemgetter(2), 2.0),
     Rule('$FnDataTypeElement', '$PreType $Returns $Optionals $DataTypeMention',
         lambda sems: sems[3], 2.0),
-    Rule('$FnDataTypeElement', '$FnDataTypeElement1', sems_0, 1.0),
+    Rule('$FnDataTypeElement', '$FnDataTypeElement1', itemgetter(0), 1.0),
 
     Rule('$Function', 'function', {'construct': 'function'}, 1.0),
     Rule('$Function', ' a function', {'construct': 'function'}, 1.5),
@@ -167,7 +152,7 @@ func_name_rules = [
 ]
 
 func_call_rules = [
-    Rule('$ROOT', '$FuncCall', sems_0, 1.0),
+    Rule('$ROOT', '$FuncCall', itemgetter(0), 1.0),
     Rule('$FuncCall', '$Call ?$Optionals $Function $PreName',
          lambda sems: merge_dicts({'request': 'func_call'}, {'name': sems[3]}), 1.0),
     Rule('$FuncCall', '$Call ?$Optionals $Function $PreName $FuncCallParaElements',
@@ -183,10 +168,10 @@ func_call_rules = [
         lambda sems: {'parameters': (sems[0])}, 1.0),
 
  #VarName is all the variables in the current scope
-    Rule('$FuncCallParaElement', '$Number', sems_0, 2.0),
-    Rule('$FuncCallParaElement', '$VarName', sems_0, 1.0),
-    Rule('$FuncCallParaElement', '$Exp', sems_0, 1.0),
-    Rule('$FuncCallParaElement', '$FuncCall', sems_0, 1.0),
+    Rule('$FuncCallParaElement', '$Number', itemgetter(0), 2.0),
+    Rule('$FuncCallParaElement', '$VarName', itemgetter(0), 1.0),
+    Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 1.0),
+    Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 1.0),
 
     Rule('$Call', 'call', {}, 0.5),
     Rule('$Call', 'invoke', {}, 0.5),
@@ -248,16 +233,16 @@ cond_rules = [
          lambda sems: (sems[2], sems[0], sems[3])),
     Rule('$Cond', '$LhsCond ?$Is $Not $Comparator $RhsCond',
          lambda sems: (complement[sems[3]], sems[0], sems[4])),
-    Rule('$LhsCond', '$HsCond', sems_0),
-    Rule('$Is', 'is', sems_0, 0.3),
-    Rule('$Not', 'not', sems_0, 0.5),
-    Rule('$RhsCond', '$HsCond', sems_0),
+    Rule('$LhsCond', '$HsCond', itemgetter(0)),
+    Rule('$Is', 'is', itemgetter(0), 0.3),
+    Rule('$Not', 'not', itemgetter(0), 0.5),
+    Rule('$RhsCond', '$HsCond', itemgetter(0)),
 
-    Rule('$HsCond', '$Hs', sems_0),
+    Rule('$HsCond', '$Hs', itemgetter(0)),
     Rule('$HsCond', '$Number', lambda sems: ('value', sems[0]), 0.5),
     # Rule('$HsCond', '$Exp', lambda sems: ('value', sems[0]), 0.5),
 
-    Rule('$Comparator', '$GreaterLess ?$Than', sems_0),
+    Rule('$Comparator', '$GreaterLess ?$Than', itemgetter(0)),
     Rule('$Comparator', '$GreaterLess ?$Than ?$Or $Equal ?$To',
          lambda sems: sems[0] + '=', 1.0),
     Rule('$Comparator', '$Equal ?$To', '='),
@@ -268,7 +253,7 @@ cond_rules = [
     Rule('$Less', 'less'),
     Rule('$Less', 'lesser'),
     Rule('$Less', 'smaller'),
-    Rule('$Than', 'than', sems_0, 0.25),
+    Rule('$Than', 'than', itemgetter(0), 0.25),
     Rule('$Or', 'or'),
 ]
 
