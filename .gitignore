@@ -1,3 +1,10 @@
 node_modules
 .vscode-test/
 *.vsix
+.DS_Store
+package-lock.json
+.vscode/settings.json
+out/extension.js
+out/extension.js.map
+out/__pycache__/*
+

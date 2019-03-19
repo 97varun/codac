@@ -10,14 +10,39 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.helloWorld"
+		"onLanguage:c"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "codac",
+					"title": "Codac",
+					"icon": "media/dep.svg"
+			  	}
+			]
+		},
+		"views": {
+			"codac": [
+				{
+					"id": "suggestions",
+					"name": "Suggestions"
+				},
+				{
+					"id": "otherinfo",
+					"name": "other info"
+				}
+			]
+		},
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "extension.listen",
+				"title": "Listen"
+			},
+			{
+				"command": "extension.stop",
+				"title": "Stop"
 			}
 		]
 	},

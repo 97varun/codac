@@ -31,6 +31,7 @@ def declare(sem):
     else:
         pass
 
+
 def initialization(sem):
     if 'lhs' not in sem:
         return Error('lhs')
@@ -75,6 +76,13 @@ def lib_include(sem):
             pass
 
 
+def return_stmt(sem):
+    if 'name' not in sem:
+        return Error('name')
+    else:
+        return 'return {0};'.format(sem['name'])
+
+
 def expression(sem):
     if sem[0] == 'name' or sem[0] == 'value':
         return str(sem[1])
@@ -90,10 +98,11 @@ def condition(sem):
 
 
 def generate_code(sems):
+    codes = []
     for sem in sems:
+        code = ''
         if 'request' in sem:
-            code = 0
-            if sem['request'] == 'declare':
+            if sem['request'] == 'declare' or sem['request'] == 'declare_fn':
                 code = declare(sem)
             elif sem['request'] == 'set':
                 code = initialization(sem)
@@ -101,14 +110,12 @@ def generate_code(sems):
                 code = func_call(sem)
             elif sem['request'] == 'include':
                 code = lib_include(sem)
-            # elif sem['request'] == 'define':
-            #     code = loop_init(sem)
-            
+            elif sem['request'] == 'return':
+                code = return_stmt(sem)
+
             if isinstance(code, Error):
-                print('missing %s' % code.err)
+                pass
+                # print('missing %s' % code.err)
             else:
-                print(code)
-        elif 'exp' in sem:
-            print(expression(sem['exp']))
-        elif 'cond' in sem:
-            print(condition(sem['cond']))
+                codes.append(code)
+    return codes
