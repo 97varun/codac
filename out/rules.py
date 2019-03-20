@@ -4,7 +4,7 @@ from operator import itemgetter
 
 
 def merge_dicts(d1, d2):
-     # print(d1,d2)
+    # print(d1,d2)
     if not d2:
         return d1
     result = d1.copy()
@@ -46,9 +46,9 @@ pack_rules = [
          lambda sems: merge_dicts(merge_dicts({'name': sems[2]},
           {'type': 'lib'}), {'construct': 'package'}), 2.5),
     Rule('$PackName', '?$Optionals $Called $VariableName',
-         lambda sems: merge_dicts({'name': sems[2]}, {'type': 'own'}), 1.0),
+          lambda sems: merge_dicts({'name': sems[2]}, {'type': 'own'}), 1.0),
     Rule('$PackName', '$VariableName',
-         lambda sems: merge_dicts({'name': sems[0]}, {'type': 'own'}), 0.5),
+          lambda sems: merge_dicts({'name': sems[0]}, {'type': 'own'}), 0.5),
     Rule('$PrePackName', 'library', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'package', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'library package', {'construct': 'package'}, 2.5),
@@ -113,7 +113,7 @@ arr_size_rules = [
          lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
     Rule('$ArrSizeMention', '?$Size $ArrSize', itemgetter(1), 0),
     Rule('$ArrSizeMention', '$Optionals $Size $ArrSize', itemgetter(2), 1.0),
-    Rule('$ArrSize', '$Number', lambda sems: {'size': str(sems[0])}, 0.75),
+    Rule('$ArrSize', '$Number', lambda sems: {'size': (str(sems[0]))}, 0.75),
     Rule('$ArrSize', '$Number $By $Number', lambda sems: {'size': (sems[0], sems[2])}, 1.5),
     Rule('$Size', 'size', {}, 1.0),
     Rule('$By', 'by', {}, 0.25),
@@ -164,7 +164,7 @@ func_call_rules = [
     Rule('$FuncCallParaElements', '$FuncCallParaElement $Optionals  $FuncCallParaElements',
          lambda sems: {'parameters': (sems[0], sems[2]['parameters'])}, 2.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
-        lambda sems: {'parameters': (sems[0])}, 1.0),
+         lambda sems: {'parameters': (sems[0])}, 1.0),
 
  #VarName is all the variables in the current scope
     Rule('$FuncCallParaElement', '$Number', itemgetter(0), 2.0),
