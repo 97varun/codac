@@ -110,7 +110,6 @@ def listen_print_loop(responses):
 
         # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
-
         action = get_action(transcript.lower())
         print(action)
 
@@ -151,4 +150,5 @@ def main():
         listen_print_loop(responses)
 
 if __name__ == '__main__':
-    main()
+    while True:
+        main()

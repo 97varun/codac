@@ -60,3 +60,14 @@ class PackageTypeAnnotator(Annotator):
                              'stdbool', 'stdarg', 'math']:
                 return[('$PackageName', tokens[0])]
         return []
+
+
+class PositionalNumberAnnotator(Annotator):
+    def annotate(self, tokens):
+        PosNumbers = ['first', 'second', 'third', 'fourth', 'fifth',
+                      'sixth', 'seventh', 'eighth', 'nineth', 'tenth']
+        if len(tokens) == 1:
+            if tokens[0] in PosNumbers:
+                val = PosNumbers.index(tokens[0]) + 1
+                return [('$PosNum', val)]
+        return []

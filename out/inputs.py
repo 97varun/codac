@@ -63,6 +63,27 @@ func_ips = [
     # 'create a function having name func1 return type int and parameters integer type x charater type y and integer type z',
 ]
 func_param_ips = [
+    'add parameter x of type double',
+    'add parameter called x of type double',
+    'add parameter integer x',
+    'add a parameter of type double with name x',
+    'add a parameter of integer type called x',
+    'add an integer type parameter called max',
+    'add a parameter x of type double at position 3',
+    'add parameter x in position 3 of type double',
+    'add a parameter at position 2 called x of type double',
+    'add a parameter of integer type called x in position 4',
+    'add a parameter of integer type at position 1 called x',
+    'add a parameter at position 7 of integer type called x',
+    'add an integer type parameter with name max in position 4',
+    'add an integer type parameter at the third position called max',
+    'add a parameter at fourth position called x of type double',
+    'add a parameter of integer type called x in the fifth position',
+    'add a parameter in the second position of integer type called x',
+    
+]
+'''
+func_param_ips = [
     'which accepts parameter x of type double',
     'and accepts parameter of type double called x',
     'with an integer type parameter',
@@ -75,6 +96,7 @@ func_param_ips = [
     'and parameters integer type x charater type y and integer type z',
     'having a parameter x of type int, a parameter y of type char and a parameter z of type int',
 ]
+'''
 
 func_call_ips = [
     'invoke the function ceil with parameter x',
