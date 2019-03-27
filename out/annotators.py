@@ -37,6 +37,16 @@ class DataTypeAnnotator(Annotator):
 
 class VariableNameAnnotator(Annotator):
     def annotate(self, tokens):
+        if len(tokens) > 0 and tokens[0] == 'pointer':
+            return [('$VariableName', '*' + '_'.join(tokens[1:]))]
+        if len(tokens) > 0 and tokens[0] == 'address':
+            if len(tokens) > 1 and tokens[1] == 'of':
+                res_words = ['variable', 'function', 'array', 'int', 'integer',
+                             'double', 'float', 'char', 'character']
+                if len(tokens) > 2 and  tokens[2] in res_words:
+                    return [('$VariableName', '&' + '_'.join(tokens[3:]))]
+            return [('$VariableName', '&' + '_'.join(tokens[2:]))]
+
         return [('$VariableName', '_'.join(tokens))]
 
 

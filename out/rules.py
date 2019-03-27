@@ -35,7 +35,7 @@ dec_constructs = [
 pack_rules = [
     Rule('$ROOT', '$Include $Inclusion', lambda sems: merge_dicts({'request': 'include'}, sems[1])),
     Rule('$Include', 'include', {}, 1.0),
-    Rule('$Include', 'add', {}, 1.0),
+    Rule('$Include', '$Add', {}, 1.0),
     Rule('$Inclusion', '?$Optionals ?$PrePackName $PackName',
          lambda sems: merge_dicts(sems[2], sems[1]), 0),
     # Rule('$Inclusion', '?$Optionals ?$PrePackName $VaraibleName',
@@ -51,7 +51,9 @@ pack_rules = [
           lambda sems: merge_dicts({'name': sems[0]}, {'type': 'own'}), 0.5),
     Rule('$PrePackName', 'library', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'package', {'construct': 'package'}, 1.0),
+    Rule('$PrePackName', 'header', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'library package', {'construct': 'package'}, 2.5),
+    Rule('$Add', 'add', {}, 0.0),
     Rule('$Called', 'called', {}, 1.5),
     Rule('$Called', 'name', {}, 1.5),
 ]
@@ -98,7 +100,7 @@ var_name_rules = [
     Rule('$VariableNameMention', '$PreVariable $PreVariable $VariableName',
          lambda sems: merge_dicts(merge_dicts({'name': sems[2]}, sems[0]), sems[1]), 1.7),
     Rule('$PreVariable', '$Variable', itemgetter(0), 0.0),
-    Rule('$Variable', 'variable', {'construct': 'variable'}, 1.0),    
+    Rule('$Variable', 'variable', {'construct': 'variable'}, 1.0),
     Rule('$PreVariable', '$Called', {}, 1.0),
     Rule('$PreVariable', 'name', {}, 1.0),
 ]
@@ -113,7 +115,7 @@ arr_size_rules = [
          lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
     Rule('$ArrSizeMention', '?$Size $ArrSize', itemgetter(1), 0),
     Rule('$ArrSizeMention', '$Optionals $Size $ArrSize', itemgetter(2), 1.0),
-    Rule('$ArrSize', '$Number', lambda sems: {'size': (str(sems[0]))}, 0.75),
+    Rule('$ArrSize', '$Number', lambda sems: {'size': (sems[0],)}, 0.75),
     Rule('$ArrSize', '$Number $By $Number', lambda sems: {'size': (sems[0], sems[2])}, 1.5),
     Rule('$Size', 'size', {}, 1.0),
     Rule('$By', 'by', {}, 0.25),
@@ -134,57 +136,174 @@ func_name_rules = [
 
     Rule('$PreFnName', '?with ?function name', {}, 1.0),
     Rule('$PreFnName', '$Called', {}, 1.0),
-    Rule('$FnDataTypeElement1', '$DataTypeMention', itemgetter(0)),
+    Rule('$FnDataTypeElement1', '$DataTypeMention', itemgetter(0), 0.0),
     Rule('$FnDataTypeElement1', '$PreType $DataTypeMention', itemgetter(1), 1.0),
     Rule('$FnDataTypeElement', '$PreType $Returns $DataTypeMention', itemgetter(2), 2.0),
     Rule('$FnDataTypeElement', '$PreType $Returns $Optionals $DataTypeMention',
-        lambda sems: sems[3], 2.0),
+         itemgetter(3), 2.0),
     Rule('$FnDataTypeElement', '$FnDataTypeElement1', itemgetter(0), 1.0),
+
+    Rule('$PreName', '$PreFnName $VariableName', itemgetter(1), 1.0),
+    Rule('$PreName', '$VariableName', itemgetter(0), 1.0),
 
     Rule('$Function', 'function', {'construct': 'function'}, 1.0),
     Rule('$Function', ' a function', {'construct': 'function'}, 1.5),
     Rule('$Return', 'return', {}, 1.5),
-    Rule('$Return', 'return ?the value', {}, 2.5),
-    Rule('$Return', 'return ?the value of', {}, 3.0),
+    Rule('$Return', 'return ?the value', {}, 1.5),
+    Rule('$Return', 'return ?the value of', {}, 2.0),
     Rule('$Returns', 'returns', {}, 0.5),
     Rule('$Returns', '$Return', {}, 0.5),
 ]
 
+func_param_rules = [
+    Rule('$ROOT', '$Add ?$Optional $FnParameterElement', itemgetter(2), 0.0),
+    Rule('$FnParameterElement', '$FuncParamElement $FuncParamElement $FuncParamElement',
+         lambda sems: merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), 0.0),
+    Rule('$FnParameterElement', '$FuncParamElement $FuncParamElement $FuncParamElement $ParamPosElement',
+         lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+    Rule('$FnParameterElement', '$FuncParamElement $FuncParamElement $ParamPosElement $FuncParamElement',
+         lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+    Rule('$FnParameterElement', '$FuncParamElement $ParamPosElement $FuncParamElement $FuncParamElement',
+         lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+
+    Rule('$FuncParamElement', '$Parameter', {'construct': 'Fnparameter'}, 0.0),
+    Rule('$FuncParamElement', '$PreName',
+         lambda sems: {'name': sems[0]}, 0.0),
+    Rule('$FuncParamElement', '$FnDataTypeElement1', itemgetter(0), 0.0),
+
+
+    Rule('$ParamPosElement', '$At $Position $Number',
+         lambda sems: {'position': str(sems[2])}, 1.0),
+    Rule('$ParamPosElement', '$At ?$Determiner $PosNum $Position',
+         lambda sems: {'position': str(sems[2])}, 1.0),
+    # Rule('$FuncPositionElement', '$Number',
+    #      lambda sems: {'parameter': (sems[0], sems[1]['type'], sems[3])}, 1.0),
+
+    Rule('$Add', 'add', {}, 0.0),
+
+    Rule('$At', 'at', {}, 1.0),
+    Rule('$At', 'in', {}, 1.0),
+    Rule('$Position', 'position', {}, 1.0),
+    Rule('$Position', 'position number', {}, 1.5),
+
+    Rule('$Parameter', 'parameter', {}, 1.0),
+    Rule('$Parameter', 'argument', {}, 1.0),
+    Rule('$Parameters', 'parameters', {}, 1.0),
+    Rule('$Parameters', 'arguments', {}, 1.0),
+    Rule('$Parameters', '$Parameter', {}, 0.0),
+]
+
 func_call_rules = [
-    Rule('$ROOT', '$FuncCall', itemgetter(0), 1.0),
-    Rule('$FuncCall', '$Call ?$Optionals $Function $PreName',
-         lambda sems: merge_dicts({'request': 'func_call'}, {'name': sems[3]}), 1.0),
-    Rule('$FuncCall', '$Call ?$Optionals $Function $PreName $FuncCallParaElements',
+    Rule('$ROOT', '$FuncCall', itemgetter(0), 0.0),
+    Rule('$FuncCall', '$Call ?$Optional $Function $PreName',
+         lambda sems: merge_dicts({'request': 'func_call'}, {'name': sems[3]}), 0.0),
+    Rule('$FuncCall', '$Call ?$Optional $Function $PreName $FuncCallParaElements',
          lambda sems: merge_dicts(merge_dicts({'request': 'func_call'}, {'name': sems[3]}), sems[4]), 1.5),
 
     Rule('$FuncCallParaElements', '$Optionals ?$Pass $Parameters $FuncCallParaElements',
-         lambda sems: {'parameters': (sems[3]['parameters'])}, 1.0),
-    Rule('$FuncCallParaElements', '$Optionals ?$Pass $Parameter $FuncCallParaElement',
-         lambda sems: {'parameters': (sems[3])}, 1.0),
-    Rule('$FuncCallParaElements', '$FuncCallParaElement $Optionals  $FuncCallParaElements',
-         lambda sems: {'parameters': (sems[0], sems[2]['parameters'])}, 2.0),
+         lambda sems: {'parameters': (sems[3]['parameters'])}, 0.0),
+    Rule('$FuncCallParaElements', '$FuncCallParaElement $Joins  $FuncCallParaElements',
+         lambda sems: {'parameters': (sems[0], sems[2]['parameters'])}, 1.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
-         lambda sems: {'parameters': (sems[0])}, 1.0),
+         lambda sems: {'parameters': (sems[0])}, 0.5),
+   
+    Rule('$FuncCallParaElement', '$Number', itemgetter(0), 1.0),
+    Rule('$FuncCallParaElement', '$VariableName', itemgetter(0), 0.5),
+    # Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 0.5),
+    Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 0.5),
 
- #VarName is all the variables in the current scope
-    Rule('$FuncCallParaElement', '$Number', itemgetter(0), 2.0),
-    Rule('$FuncCallParaElement', '$VarName', itemgetter(0), 1.0),
-    Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 1.0),
-    Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 1.0),
-
-    Rule('$PreName', '$PreFnName $VariableName', itemgetter(1), 3.0),
-    Rule('$PreName', '$VariableName', itemgetter(0), 1.0),
-    Rule('$Call', 'call', {}, 0.5),
-    Rule('$Call', 'invoke', {}, 0.5),
-    Rule('$Call', 'execute', {}, 0.5),
+    Rule('$Call', 'call', {}, 0.0),
+    Rule('$Call', 'invoke', {}, 0.0),
+    Rule('$Call', 'execute', {}, 0.0),
     Rule('$Call', '$Return', {}, 0.5),
     Rule('$Pass', 'pass ?it', {}, 0.5),
     Rule('$Pass', 'give ?it', {}, 0.5),
     Rule('$Function', 'function', {}, 0.5),
 ]
 
+loop_define_rules = [
+    Rule('$ROOT', '$Define $Optionals $Definition',
+         lambda sems: merge_dicts({'request': 'define'}, sems[2]), 0.5),
+    Rule('$Define', 'define', itemgetter(0)),
+    Rule('$Define', 'insert', itemgetter(0)),
+    Rule('$Define', 'run', itemgetter(0)),
+    Rule('$Define', 'create', itemgetter(0)),
+    Rule('$Define', 'declare', itemgetter(0)),
+    Rule('$Definition', '?$LoopType $Loop',
+         lambda sems: merge_dicts({'construct': 'loop'}, sems[0]), 0.0),
+    Rule('$LoopType', 'while', {'type': 'while'}, 0.5),
+    Rule('$LoopType', 'do while', {'type': 'do while'}, 1),
+    Rule('$LoopType', 'for', {'type': 'for'}, 0.5),
+    Rule('$Loop', 'loop', itemgetter(0), 1),
+]
+#Loop Init Rules not complete (i = 0, i set to 0)
+loop_init_rules = [
+    Rule('$ROOT', '$Add ?$Optional $LoopInit',
+         lambda sems: merge_dicts({'request': 'Append'}, sems[2]), 0.0),
+    Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement',
+         lambda sems: merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), 0.0),
+    # Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement $INITIALIZATION',
+    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+    # Rule('$LoopInit', '$LoopInitElement $LoopInitElement $INITIALIZATION $LoopInitElement',
+    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+    # Rule('$LoopInit', '$LoopInitElement $INITIALIZATION $LoopInitElement $LoopInitElement',
+    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
+
+    Rule('$LoopInitElement', '?$Control $LoopVarNames',
+        lambda sems: merge_dicts(sems[1], sems[0]), 0.0),
+    Rule('$LoopInitElement', '$PreName',
+         lambda sems: {'name': sems[0]}, 0.0),
+    Rule('$LoopInitElement', '$FnDataTypeElement1', itemgetter(0), 0.0),
+
+    Rule('$Control', 'control', {'construct': 'LoopInit'}, 0.5),
+    Rule('$Control', '$Loop', {'construct': 'LoopInit'}, 0.5),
+    Rule('$LoopVarNames', '$Variable', {}, 0.5),
+    Rule('$LoopVarNames', 'initializer', {'construct': 'LoopInit'}, 0.5),
+    Rule('$LoopVarNames', 'counter', {'construct': 'LoopInit'}, 0.5),
+]
+
+loop_cond_rules = [
+    Rule('$ROOT', '$Add ?$Optional $LoopCond',
+         lambda sems: merge_dicts({'request': 'Append'}, sems[2]), 0.0),
+
+    Rule('$LoopCond', '?$Loop $LoopPreConds $Cond',
+        lambda sems: merge_dicts({'construct': 'LoopCond'}, {'conditions': sems[2]}), 1.0),
+    Rule('$LoopPreConds', 'condition', {}, 1.0),
+    Rule('$LoopPreConds', 'conditions', {}, 1.0),
+]
+
+loop_update_rules = [
+    Rule('$ROOT', '$Add ?$Optional $LoopUpdate',
+         lambda sems: merge_dicts({'request': 'Append'}, sems[2]), 0.5),
+
+    Rule('$LoopUpdate', '?$Loop $LoopPreUpdates $LoopUpdateElements',
+         lambda sems: merge_dicts({'construct': 'LoopUpdate'}, sems[2]), 1.0),
+
+    Rule('$LoopUpdateElements', '$Exp $Joins $LoopUpdateElements',
+         lambda sems: {'updates': (sems[0], sems[2]['updates'])}, 1.5),
+    # Rule('$LoopUpdateElements', '$Exp $LoopUpdateElements',
+    #      lambda sems: {'updates': (sems[0], sems[1]['updates'])}, 0.0),
+    Rule('$LoopUpdateElements', '$Exp',
+         lambda sems: {'updates': (sems[0])}, 1.0),
+
+    Rule('$LoopPreUpdates', '$LoopPreUpdate ?$Statement', {}, 0.0),
+    Rule('$LoopPreUpdate', 'update', {}, 0.5),
+    Rule('$LoopPreUpdate', 'updates', {}, 0.5),
+    Rule('$LoopPreUpdate', 'modifier', {}, 0.5),
+    Rule('$LoopPreUpdate', 'modifiers', {}, 0.5),
+    Rule('$LoopPreUpdate', 'increment', {}, 0.5),
+    Rule('$LoopPreUpdate', 'decrement', {}, 0.5),
+    Rule('$LoopPreUpdate', 'step', {}, 0.5),
+    Rule('$LoopPreUpdate', 'steps', {}, 0.5),
+    Rule('$Statement', 'statement', {}, 0.5),
+    Rule('$Statement', 'statements', {}, 0.5),
+]
+
 optionals = [
-    Rule('$Optionals', '$Optional ?$Optionals'),
+    Rule('$Optionals', '$Optional'),
+    Rule('$Optionals', '$Optional $Optional'),
+    Rule('$Optionals', '$Optional $Optional $Optional'),
+    Rule('$Optionals', '$Optional $Optional $Optional $Optional'),
 
     Rule('$Optional', '$Stopword'),
     Rule('$Optional', '$Determiner'),
@@ -261,6 +380,7 @@ cond_rules = [
 exp_rules = [
     # Rule('$ROOT', '$Exp', lambda sems: {'exp': sems[0]}),
     Rule('$Exp', '$UnOp $Exp', lambda sems: (sems[0], sems[1])),
+    Rule('$Exp', '$Exp $UnOp', lambda sems: (sems[0], sems[1])),
     Rule('$Exp', '$Exp $BinOp $Exp', lambda sems: (sems[1], sems[0], sems[2])),
     Rule('$Exp', '$Number', lambda sems: ('value', sems[0]), 0.5),
     Rule('$Exp', '?$Variable $VariableName', lambda sems: ('name', sems[1])),
@@ -278,35 +398,54 @@ exp_rules = [
 
     Rule('$UnOp', 'minus', '-', 0.25),
     Rule('$UnOp', 'decrement', '--', 0.25),
-    Rule('$UnOp', 'minus minus', '--', 0.25),
+    Rule('$UnOp', 'minus minus', '--', 0.6),
     Rule('$UnOp', 'increment', '++', 0.25),
-    Rule('$UnOp', 'plus plus', '++', 0.25),
+    Rule('$UnOp', 'plus plus', '++', 0.6),
 ]
 
 ptr_rules = [
+    Rule('$VariableNameMention', '$Pointer', {'cons': 'pointer'}, 0.5),
+    Rule('$PreVariable', '$Pointer', {'cons': 'pointer'}, 1.0),
+    Rule('$Pointer', 'pointer', {}, 0.0),
+    Rule('$Pointer', 'points ?to', {}, 0.0),
+    Rule('$Pointer', 'pointing ?to', {}, 0.0),
+    Rule('$Initialize', 'point'),
 ]
 
 return_stmt_rules = [
      Rule('$ROOT', '$Return $ReturnElements',
-           lambda sems: merge_dicts({'request': 'return'}, sems[1]), 1.0),
-     Rule('$ReturnElements', '$ReturnElement $PreName',
-           lambda sems:  merge_dicts({'name': sems[1]}, sems[0]), 2.0),
-     Rule('$ReturnElements', '$Optionals $ReturnElement $PreName',
-           lambda sems:  merge_dicts({'name': sems[2]}, sems[1]), 2.5),
+           lambda sems: merge_dicts({'request': 'return'}, sems[1]), 0.0),
+     Rule('$ReturnElements', '$ReturnElement $ReturnValue',
+           lambda sems: {'value': (sems[0], sems[1])}, 0.5),
+     Rule('$ReturnElements', '$Optionals $ReturnElement $ReturnValue',
+            lambda sems: {'value': (sems[1], sems[2])}, 1.0),
      Rule('$ReturnElements', '$PreName',
-           lambda sems: {'name': sems[0]}, 1.5),
-     Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0.0),
-     Rule('$ReturnElement', 'array', {'type': 'array'}, 0.0),
-     Rule('$ReturnElement', 'string', {'type': 'string'}, 0.0),
-     Rule('$ReturnElement', '$Function', {'type': 'function'}, 0.0),
+           lambda sems: {'value': ('variable', sems[0])}, 0.0),
+     Rule('$ReturnElements', '$Number',
+           lambda sems: {'value': ('number', sems[0])}, 1.5),
+     Rule('$ReturnElements', '$Null',
+           lambda sems: {'value': ('Null', 'null')}, 2.5),
+
+     Rule('$Null', 'null', {}, 1.0),
+     Rule('$ReturnValue', '$PreName', itemgetter(0), 0.0),
+     Rule('$ReturnValue', '$Number', 'num', 0.5),
+
+    #  Rule('$ReturnElement', 'value', 'value', 2.0),           
+     Rule('$ReturnElement', '$Variable', 'variable', 0.0),
+     Rule('$ReturnElement', 'array', 'array', 0.0),
+     Rule('$ReturnElement', 'string', 'string', 0.0),
+     Rule('$ReturnElement', 'expression', 'exp', 0.0),
+     Rule('$ReturnElement', '$Function', 'function', 0.0),
 ]
 
-dec_rules = decl_rules + dec_constructs
-name_rules = var_name_rules + arr_name_rules + func_name_rules
-add_param_rules = arr_size_rules
+rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules + ptr_rules
+rules_2 = func_name_rules + func_param_rules + func_call_rules
+rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules + loop_update_rules 
+rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
+         optionals + cond_rules + exp_rules + return_stmt_rules
 
-rules = dec_rules + name_rules + add_param_rules + func_call_rules + data_type_rules\
-    + pack_rules + return_stmt_rules + optionals + init_rules + cond_rules + exp_rules
+rules = rules_1 + rules_2 + rules_3 + rules_4
+
 
 grammar = Grammar(
     rules=rules,
@@ -315,6 +454,7 @@ grammar = Grammar(
         TokenAnnotator(),
         VariableNameAnnotator(),
         NumberAnnotator(),
-        PackageTypeAnnotator()
+        PackageTypeAnnotator(),
+        PositionalNumberAnnotator()
     ]
 )

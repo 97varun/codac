@@ -1,40 +1,3 @@
-var_ips = [
-    'declare integer variable x',
-    'declare variable x type integer',
-    'declare integer variable called x',
-    'declare an integer variable x',
-    'declare a variable y of type int',
-    'declare an int variable x',
-    'declare a double variable called z',
-    'declare a variable called prog count of type double',
-    'declare a variable x with type integer',
-    'declare a variable called x with type float',
-    'declare a variable called prog count of type int',
-    'declare an integer variable with name y',
-    'declare variable x',
-    'declare a variable of type integer x',
-    'declare a variable of integer type called program counter',
-    'declare integer type variable program counter',
-    'declare an integer x',
-    'declare a variable count with type of integer',
-    'declare a long integer program count'
-]
-
-init_ips = [
-    #              ---->Wrong Output
-    'initialize variable x',
-    'initialize variable x equal to 4',
-    'initialize x to 4',
-    'initialize x to y',
-    'set x equals 20',
-    'set x to y',
-    'make y equals 20',
-    'make y equal to 20',
-    'change value of x to 15',
-    'update value of y to 20',
-    'update the value of variable x to variable y'
-]
-
 arr_ips = [
     'declare an integer type array called prog count',
     'declare an array called x with type float of size 10',
@@ -43,105 +6,6 @@ arr_ips = [
     'declare an integer array of size 20 called x',
     'declare an array of size 20  of type int called x',
     'declare an array  called x of size 20 type int',
-]
-
-func_ips = [
-    'declare a function func1',
-    'declare a function abc of type int',
-    'define a function of return type int func1',
-    'define a function with name fun',
-    'create a function having return type int called func1',
-    'define a function called func of return type double',
-    'declare a function called func with return value of type int',
-    'create an integer type function func1',
-    # 'declare a function func1 of type int and accepts parameter x of type double',
-    # 'define a function abc of return type int and parameters of type int and char',
-    # 'create a function hey that returns an integer and accepts two integer arguments called a and b',
-    # 'create an integer type function func having a parameter x of type int, a parameter y of type char and a z of type int',
-    # 'declare a function called fun of type float that accepts integer argument x and character argument y',
-    # 'create a function func having parameters x of type int, parameter y of type char and z of type int and return type int',
-    # 'create a function having name func1 return type int and parameters integer type x charater type y and integer type z',
-]
-func_param_ips = [
-    'add parameter x of type double',
-    'add parameter called x of type double',
-    'add parameter integer x',
-    'add a parameter of type double with name x',
-    'add a parameter of integer type called x',
-    'add an integer type parameter called max',
-    'add a parameter x of type double at position 3',
-    'add parameter x in position 3 of type double',
-    'add a parameter at position 2 called x of type double',
-    'add a parameter of integer type called x in position 4',
-    'add a parameter of integer type at position 1 called x',
-    'add a parameter at position 7 of integer type called x',
-    'add an integer type parameter with name max in position 4',
-    'add an integer type parameter at the third position called max',
-    'add a parameter at fourth position called x of type double',
-    'add a parameter of integer type called x in the fifth position',
-    'add a parameter in the second position of integer type called x',
-    
-]
-'''
-func_param_ips = [
-    'which accepts parameter x of type double',
-    'and accepts parameter of type double called x',
-    'with an integer type parameter',
-    'with parameters of type int and char',
-    'which takes parameters of type int abc and char called b',
-    'and takes parameters x of type int and a parameter of char type',
-    'which accepts parameters of type int called a and char called b',
-    'and takes 2 integer arguments called a and b',
-    'that accepts integer argument x and character argument y',
-    'and parameters integer type x charater type y and integer type z',
-    'having a parameter x of type int, a parameter y of type char and a parameter z of type int',
-]
-'''
-
-func_call_ips = [
-    'invoke the function ceil with parameter x',
-    'call function max with arguments x and y',
-    'call function called reverse with argument x',
-    'execute function called toLowerCase with parameter x',
-    'call the function max and pass it arguments 2 and 3',
-    # 'call function func and pass it as arguments the variables x and y', not handling(..args variable x and func y)
-    'invoke function fun and pass parameters x and y',
-    'execute function func and give arguments g and h',
-    'return value of function f with argument x',
-    'return value of function func1 with parameters x and y',
-    'invoke the function called printf and pass it parameters 6 and y',
-    # 'invoke function max having parameters 2 and 10 and 5',
-    # 'call the function func1 and pass it arguments 2 3 and 4',
-]
-
-return_stmt_ips = [
-    'return abc',
-    'return the value of max',
-    'return the variable min',
-    'return the value of variable sum',
-    'return the variable called abc',
-    'return the variable with name min',
-    'return the value 100',
-    'return 0',
-    'return x',
-    'return null',
-    'return the array x',
-    'return the array called arr',
-    'return the function max',
-    'return the string hello world',
-    'return the value of function max',
-]
-
-pack_ips = [
-    'include the package stdio',
-    'include a library package called stdio',
-    'include the library stdlib',
-    'add package string',
-    'include package with name stdlib',
-    'add library package called stdarg',
-    'add package with name MyLib',
-    'include package called SupportFunc',
-    'include linked list',
 ]
 
 cond_ips = [
@@ -183,18 +47,240 @@ exp_ips = [
     'x plus 2 less than 10'
 ]
 
+func_ips = [
+    'declare a function func1',
+    'declare a function abc of type int',
+    'define a function of return type int func1',
+    'define a function with name fun',
+    'create a function having return type int called func1',
+    'define a function called func of return type double',
+    'declare a function called func with return value of type int',
+    'create an integer type function func1',
+    # 'declare a function func1 of type int and accepts parameter x of type double',
+    # 'define a function abc of return type int and parameters of type int and char',
+    # 'create a function hey that returns an integer and accepts two integer arguments called a and b',
+    # 'create an integer type function func having a parameter x of type int, a parameter y of type char and a z of type int',
+    # 'declare a function called fun of type float that accepts integer argument x and character argument y',
+    # 'create a function func having parameters x of type int, parameter y of type char and z of type int and return type int',
+    # 'create a function having name func1 return type int and parameters integer type x charater type y and integer type z',
+]
+
+func_param_ips = [
+    'add parameter x of type double',
+    'add parameter called x of type double',
+    'add parameter integer x',
+    'add a parameter of type double with name x',
+    'add a parameter of integer type called x',
+    'add an integer type parameter called max',
+    'add a parameter x of type double at position 3',
+    'add parameter x in position 3 of type double',
+    'add a parameter at position 2 called x of type double',
+    'add a parameter of integer type called x in position 4',
+    'add a parameter of integer type at position 1 called x',
+    'add a parameter at position 7 of integer type called x',
+    'add an integer type parameter with name max in position 4',
+    'add an integer type parameter at the third position called max',
+    'add a parameter at fourth position called x of type double',
+    'add a parameter of integer type called x in the fifth position',
+    'add a parameter in the second position of integer type called x',
+]
+'''
+func_param_ips = [
+    'which accepts parameter x of type double',
+    'and accepts parameter of type double called x',
+    'with an integer type parameter',
+    'with parameters of type int and char',
+    'which takes parameters of type int abc and char called b',
+    'and takes parameters x of type int and a parameter of char type',
+    'which accepts parameters of type int called a and char called b',
+    'and takes 2 integer arguments called a and b',
+    'that accepts integer argument x and character argument y',
+    'and parameters integer type x charater type y and integer type z',
+    'having a parameter x of type int, a parameter y of type char and a parameter z of type int',
+]
+'''
+
+func_call_ips = [
+    'invoke the function ceil with parameter x',
+    'call function max with arguments x and y',
+    'call function called reverse with argument x',
+    'execute function called toLowerCase with parameter x',
+    'call the function max and pass it arguments 2 and 3',
+    # 'call function func and pass it as arguments the variables x and y', not handling(..args variable x and func y)
+    'invoke function fun and pass parameters x and y',
+    'execute function func and give arguments g and h',
+    'return value of function f with argument x',
+    'return value of function func1 with parameters x and y',
+    'invoke the function called printf and pass it parameters 6 and y',
+    # 'invoke function max having parameters 2 and 10 and 5',
+    # 'call the function func1 and pass it arguments 2 3 and 4',
+]
+
+init_ips = [
+    #              ---->Wrong Output
+    'initialize variable x',
+    'initialize variable x equal to 4',
+    'initialize x to 4',
+    'initialize x to y',
+    'set x equals 20',
+    'set x to y',
+    'make y equals 20',
+    'make y equal to 20',
+    'change value of x to 15',
+    'update value of y to 20',
+    'update the value of variable x to variable y',
+]
+
+loop_ips = [
+    'create a for loop',
+    'define a while loop',
+    'create a while loop',
+    'declare a while loop',
+    'run a for loop',
+    'define a do while loop',
+]
+
+loop_init_ips = [
+    'add loop variable i of type char',
+    'add counter i of type int',
+    'add integer type initializer called i',
+    'add control variable called i having type integer',
+    'add variable of integer type called i',
+    'add initializer of type int called i',
+    # 'add integer type variable i = 0',
+    # 'add loop variable i = 0',
+    # 'add control variable i of type integer initialized to 0',
+    # 'add integer type loop variable i set to 0',
+    # 'add control variable int i = 0',
+    # 'add variable i = 0 of type integer',
+    # 'add loop variable i of integer type set to 0',
+]
+
+loop_cond_ips = [
+    'add condition x less than 10',
+    'add a condition program count greater than 20',
+    'add the condition a greater than 2',
+    'add conditions a is greater than 5 and a is less than 10',
+    'add loop condition a is equal to 10',
+    # 'add the condition a is not equal to 10',
+    # 'add condition x equals 10',
+    # 'add a condition a equal to 10',
+    # 'add loop condition a not equal to 10',
+    # 'add a loop condition x not greater than 5',
+    # 'add condition i is less than test case',
+    # 'add a loop condition a smaller than b',
+    # 'add the condition x bigger than y',
+    # 'add loop condition a greater than equal to 20',
+    # 'add the loop conditions b less than or equal to y',
+    # 'add conditions a less than 20 and b greater than x or c less than d',
+    # 'add loop condition true',
+    # 'add condition false',
+]
+
+loop_update_ips = [
+    'add an update plus plus a',
+    'add a loop update x plus plus',
+    'add loop step y plus plus',
+    'add a loop modifier x minus minus',
+    'add increment a plus plus',
+    'add update statement x plus plus',
+    'add decrement minus minus z',
+    'add modifiers ++x and --y',
+    'add loop updates a++ and --b',
+    # 'add update statements x++ and y--',
+    'add loop modifiers x++ --y and z--',
+    # 'add loop steps ++a --b and c--',
+    # 'add updates x++ ++z and y--',
+]
+'''
+loop_ips = [
+    'create a for loop with loop variable i',
+    'create a for loop with counter i of type int',
+    'define a loop having control variable i',
+    'create a for loop with counter of type int called i',
+    'declare a while loop with counter i of type int',
+    'run a for loop with loop counter i of type int',
+    'make a while loop with condition i less 10',
+    'declare a while loop that runs until i equals 0',
+    'run a for loop that goes from i equal to zero to i equal to 10',
+    'define a loop with initializer i going from 0 to 10 in steps of 2',
+]
+'''
+
+nav_ips = [
+    'Navigate to line number 10',
+    'Navigate to line 10',
+    'Navigate to function func',
+    'Navigate to line number 10',   
+]
+
+pack_ips = [
+    'include the package stdio',
+    'include a library package called stdio',
+    'include the library stdlib',
+    'add package string',
+    'include package with name stdlib',
+    'add library package called stdarg',
+    'add package with name MyLib',
+    'include package called SupportFunc',
+    'include linked list',
+]
+
 ptr_ips = [
+    'declare integer pointer ptr',
+    'declare pointer x of type integer',
+    'declare integer pointer called x',
+    'declare an integer pointer ptr',
+    'declare a pointer y of type int',
+    'declare a double pointer called z',
+    'declare a pointer called ptr idx of type double',
+    'declare a pointer called x with type float',
+    'declare an integer pointer with name y',
+    'declare pointer x',
+    'declare a pointer of type integer x',
+    'declare integer type pointer ptr',
+    'declare a pointer count with type integer',
+]
+ptr_init_ips = [
+    'point x to y',
+    'point x to address of y',
+    'initialize ptr to x',
+    'initialize ptr to address of x',
+    'set pointer x to pointer y',
+    'set ptr to address of variable x',
+    'initialize pointer x to pointer y',
+    'set pointer x to address of array y',
+]
+ptr_ips_1 = [
     'declare a pointer to an integer variable called p',
     'declare a pointer p of type integer',
     'declare a pointer variable p of integer type',
     'declare a pointer p to integer',
     'declare a variable that points to integer called p',
-    'declare a pointer that points to pointer to integer',
+    'declare a pointer that points to pointer to integer',  #ERROR
     'declare a variable pointing to integer',
     'declare a pointer p',
-    'declare a pointer to pointer to integer',
-    'declare pointer of integer',
-    'declare pointer of pointer of float called p',
+    'declare a pointer to pointer to integer',      #ERROR
+    'declare pointer ptr of integer',
+    'declare pointer of pointer of float called p', #ERROR
+]
+
+return_stmt_ips = [
+    'return abc',
+    'return the value of max',
+    'return the variable min',
+    'return the value of variable sum',
+    'return the variable called abc',
+    'return the variable with name min',
+    'return the value 100',
+    'return 0',
+    'return x',
+    'return null',
+    'return the array x',
+    'return the array called arr',
+    'return the function max',
+    'return the string hello world',
+    'return the value of function max',
 ]
 
 struct_ips = [
@@ -204,39 +290,24 @@ struct_ips = [
     'create a structure employee with variables emp1 and emp2',
 ]
 
-loop_ips = [
-    'create a for loop with loop variable i',
-    'create a for loop with counter i of type int',
-    'define a loop having control variable i',
-    'create a for loop with counter of type int called i',
-    'declare a while loop with counter i of type int',
-    'run a for loop with loop counter i of type int',
+var_ips = [
+    'declare integer variable x',
+    'declare variable x type integer',
+    'declare integer variable called x',
+    'declare an integer variable x',
+    'declare a variable y of type int',
+    'declare an int variable x',
+    'declare a double variable called z',
+    'declare a variable called prog count of type double',
+    'declare a variable x with type integer',
+    'declare a variable called x with type float',
+    'declare a variable called prog count of type int',
+    'declare an integer variable with name y',
+    'declare variable x',
+    'declare a variable of type integer x',
+    'declare a variable of integer type called program counter',
+    'declare integer type variable program counter',
+    'declare an integer x',
+    'declare a variable count with type of integer',
+    'declare a long integer program count'
 ]
-
-'''
-loop_ips = [
-    'create a for loop',
-    'define a while loop',
-    'create a while loop',
-    'declare a while loop',
-    'run a for loop',
-    'define a do while loop',
-]
-loop_ips = [
-    'with loop variable i',
-    'with counter i of type int',
-    'having control variable i',
-    'with counter of type int called i',
-    'with counter i of type int',
-    'with loop counter i of type int',
-]
-loop_ips = [
-    'create a for loop with loop variable i',
-    'create a for loop with counter i of type int',
-    'define a loop with initializer i going from 0 to 10 in steps of 2',
-    'make a while loop with condition i less 10',
-    'declare a while loop that runs until i equals 0',
-    'run a for loop that goes from i equal to zero to i equal to 10',
-]
-#           -----> WITH PARAMETERS
-'''

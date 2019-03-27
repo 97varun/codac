@@ -37,7 +37,13 @@ def get_action(transcript):
 
 
 if __name__ == "__main__":
-        for ip in func_param_ips:
+        ips = [arr_ips, cond_ips, exp_ips, func_ips, func_param_ips,    #[0-4]
+               func_call_ips, init_ips, loop_ips, loop_init_ips, loop_cond_ips, #[5-9]
+               loop_update_ips, pack_ips, ptr_ips, ptr_init_ips, ptr_ips_1, return_stmt_ips, var_ips ]  #[10-16]
+
+        ips_not_implemented = [struct_ips, nav_ips]
+
+        for ip in ips[15]:
                 print('INP: %s' % ip)
                 parses = parse_input(grammar, ip)
 

@@ -113,7 +113,7 @@ def generate_code(sems):
                 code = lib_include(sem)
             elif sem['request'] == 'return':
                 code = return_stmt(sem)
-            
+
             if isinstance(code, Error):
                 pass
                 # print('missing %s' % code.err)
