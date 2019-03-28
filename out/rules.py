@@ -124,7 +124,7 @@ arr_size_rules = [
 # TODO : PARAMETERS
 func_name_rules = [
     Rule('$ROOT', '$Declare $FnDeclaration',
-         lambda sems: merge_dicts({'request': 'declare_fn'}, sems[1]), 1.0),
+         lambda sems: merge_dicts({'request': 'declare'}, sems[1]), 1.0),
     Rule('$FnDeclaration', '$Function ?$PreFnName $VariableName',
          lambda sems:  merge_dicts({'name': sems[2]}, sems[0])),
     Rule('$FnDeclaration', '$FnDataTypeElement $Function ?$PreFnName $VariableName',
