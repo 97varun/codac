@@ -323,3 +323,21 @@ var_ips = [
     'declare a variable count with type of integer',
     'declare a long integer program count'
 ]
+#           -----> WITH PARAMETERS
+'''
+
+if_ips = [
+    'declare an if statement',
+    'declare a conditional statement',
+    'declare if',
+    'declare if else',
+    'declare if else statement',
+
+    # adding conditions and else if
+    'add else if block',
+    'add else if',
+    'add condition x greater than 2',
+    'add condition x less than y and z greater than x',
+    'add a condition x less than 10',
+    'add else'
+]

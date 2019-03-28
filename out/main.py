@@ -3,6 +3,7 @@ from rules import grammar
 from inputs import *
 from executor import generate_code
 import json
+import sys
 
 
 def score(parse):

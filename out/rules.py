@@ -27,7 +27,7 @@ decl_rules = [
 dec_constructs = [
     Rule('$DeclarationElement', '$DataTypeMention', itemgetter(0)),
     Rule('$DeclarationElement', '$VariableNameMention', itemgetter(0)),
-    Rule('$DeclarationElement', '$Optionals $VariableNameMention', itemgetter(1), 1.0),
+    Rule('$DeclarationElement', '$Optionals $VariableNameMention', itemgetter(1), 0.25),
     # Rule('$DeclarationElement', '$Optionals $ArrayNameMention', itemgetter(1), 1.0),
     # Rule('$DeclarationElement', '$Optionals $FuncNameMention', itemgetter(1), 1.0),
 ]
@@ -44,7 +44,7 @@ pack_rules = [
     # Can replace $PackageName with $variableName
     Rule('$PackName', '?$Optionals ?$Called $PackageName',
          lambda sems: merge_dicts(merge_dicts({'name': sems[2]},
-          {'type': 'lib'}), {'construct': 'package'}), 2.5),
+                                              {'type': 'lib'}), {'construct': 'package'}), 2.5),
     Rule('$PackName', '?$Optionals $Called $VariableName',
           lambda sems: merge_dicts({'name': sems[2]}, {'type': 'own'}), 1.0),
     Rule('$PackName', '$VariableName',
@@ -355,8 +355,7 @@ complement = {
 }
 
 cond_rules = [
-    # Rule('$ROOT', '$Cond', lambda sems: {'cond': sems[0]}),
-    # Rule('$Conds', '$Cond', lambda sems: (sems[0],)),
+    Rule('$ROOT', '$Cond', lambda sems: {'cond': sems[0]}),
     Rule('$Cond', '$Cond $Conj $Cond', lambda sems: (sems[1], sems[0], sems[2])),
     Rule('$Conj', 'and', '&&', 0.25),
     Rule('$Conj', 'or', '||', 0.25),
@@ -453,14 +452,36 @@ return_stmt_rules = [
      Rule('$ReturnElement', '$Function', 'function', 0.0),
 ]
 
+if_rules = [
+     Rule('$ROOT', '$Declare ?$Optionals $IfElseStatement',
+          lambda sems: merge_dicts({'request': 'declare'}, sems[2])),
+     Rule('$IfElseStatement', '$If ?$Statement', {'construct': 'if'}),
+     Rule('$IfElseStatement', '$If $Else ?$Statement', {'construct': 'if-else'}),
+     Rule('$IfElseStatement', '$Conditional ?$Statement', {'construct': 'if'}),
+     Rule('$If', 'if', {}, 0.75),
+     Rule('$Else', 'else', {}, 0.75),
+     Rule('$Statement', 'statement', {}, 0.25),
+     Rule('$Statement', 'block', {}, 0.25),
+     Rule('$Conditional', 'conditional', {}, 0.25),
+
+     # rules to add conditions, else if, else
+     Rule('$ROOT', '$Add ?$Optionals $Condition $Cond',
+          lambda sems: {'request': 'add', 'cond': sems[3], 'construct': 'condition'}),
+     Rule('$ROOT', '$Add ?$Optionals $ElseIf ?$Statement',
+          lambda sems: merge_dicts({'request': 'add'}, sems[2])),
+     Rule('$ElseIf', '$Else', {'construct': 'else'}),
+     Rule('$ElseIf', '$Else $If', {'construct': 'else-if'}),
+     Rule('$Add', 'add'),
+     Rule('$Condition', 'condition', {}),
+]
+
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules + ptr_rules
 rules_2 = func_name_rules + func_param_rules + func_call_rules + add_fn_call_rules
 rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules + loop_update_rules 
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
-         optionals + cond_rules + exp_rules + return_stmt_rules
+         optionals + cond_rules + exp_rules + return_stmt_rules + if_rules
 
 rules = rules_1 + rules_2 + rules_3 + rules_4
-
 
 grammar = Grammar(
     rules=rules,
