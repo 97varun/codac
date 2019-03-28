@@ -115,6 +115,18 @@ func_call_ips = [
     # 'invoke function max having parameters 2 and 10 and 5',
     # 'call the function func1 and pass it arguments 2 3 and 4',
 ]
+func_call_printf_ips = [
+    'call printf with string Hello World',
+    'call function printf with string type argument Hey',
+    'invoke the function printf with parameter Hello',
+    'call function printf with argument of string type Hello World',
+    'call function called printf with string Hey',
+    'execute function called printf with parameter of type string Demo Printf',
+    'call the function printf and pass it string argument Hello World',
+    'invoke function printf and pass string type parameter Test',
+    'execute function printf and give argument of type string Hi',
+    'return value of function printf with argument Hello World',
+]
 
 init_ips = [
     #              ---->Wrong Output

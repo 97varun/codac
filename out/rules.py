@@ -221,6 +221,21 @@ func_call_rules = [
     Rule('$Function', 'function', {}, 0.5),
 ]
 
+add_fn_call_rules = [
+    Rule('$FuncCall', '$Call ?$Optional ?$Function ?$PreFnName $FnCallName $FnCallParaElements',
+         lambda sems: merge_dicts(merge_dicts({'request': 'func_call'}, {'name': sems[4]}), sems[5]), 1.5),
+    Rule('$FnCallParaElements', '?$Optionals ?$Pass ?$PreString $Parameter ?$PreString $VariableName',
+         lambda sems: {'parameter': sems[5]}, 1.0),
+    Rule('$FnCallParaElements', '?$Optionals ?$Pass $PreString ?$Parameter ?$PreString $VariableName',
+         lambda sems: {'parameter': sems[5]}, 1.0),
+
+    Rule('$PreString', '?of ?type string ?type', {}, 0.5),
+    Rule('$FnCallName', 'printf', 'printf', 1.0),
+    Rule('$FnCallName', 'print f', 'printf', 1.0),
+    Rule('$FnCallName', 'print', 'printf', 1.0),
+
+]
+
 loop_define_rules = [
     Rule('$ROOT', '$Define $Optionals $Definition',
          lambda sems: merge_dicts({'request': 'define'}, sems[2]), 0.5),
@@ -439,7 +454,7 @@ return_stmt_rules = [
 ]
 
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules + ptr_rules
-rules_2 = func_name_rules + func_param_rules + func_call_rules
+rules_2 = func_name_rules + func_param_rules + func_call_rules + add_fn_call_rules
 rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules + loop_update_rules 
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
          optionals + cond_rules + exp_rules + return_stmt_rules
