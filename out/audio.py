@@ -3,6 +3,7 @@ from __future__ import division
 import re
 import sys
 import os
+import json
 
 from google.cloud import speech
 from google.cloud.speech import enums
@@ -110,15 +111,18 @@ def listen_print_loop(responses):
 
         # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
-        action = get_action(transcript.lower())
-        print(action)
-
-        sys.stdout.flush()
-        break
+        return transcript.lower()
 
 
 def main():
-    os.environ.update({'GOOGLE_APPLICATION_CREDENTIALS': '/Users/himanshusonthalia/Desktop/ProjectCodac/credentials.json'})
+    file = ''
+    line = 0
+    if len(sys.argv) == 3:
+        file = sys.argv[1]
+        line = int(sys.argv[2])
+
+    os.environ.update({'GOOGLE_APPLICATION_CREDENTIALS':
+                       'C:/Users/Varun/Downloads/credentials.json'})
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
@@ -135,8 +139,7 @@ def main():
         config=config,
         single_utterance=True)
 
-    # sys.stdout.flush()
-    print('{"status": "ready"}')
+    print(json.dumps({'status': 'ready'}))
     sys.stdout.flush()
 
     with MicrophoneStream(RATE, CHUNK) as stream:
@@ -147,8 +150,10 @@ def main():
         responses = client.streaming_recognize(streaming_config, requests)
 
         # Now, put the transcription responses to use.
-        listen_print_loop(responses)
+        transcript = listen_print_loop(responses)
+        action = get_action(transcript, file, line)
+        print(action)
+        sys.stdout.flush()
 
 if __name__ == '__main__':
-    while True:
-        main()
+    main()
