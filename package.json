@@ -30,11 +30,25 @@
 					"name": "Suggestions"
 				},
 				{
-					"id": "otherinfo",
-					"name": "other info"
+					"id": "dictation",
+					"name": "Dictation"
+				},
+				{
+					"id": "errors",
+					"name": "Errors"
 				}
 			]
 		},
+		"menus": {
+			"view/title": [
+			  {
+				"command": "extension.dictation",
+				"group": "navigation",
+				"when": "view == dictation"
+
+			  }
+			]
+		  },
 		"commands": [
 			{
 				"command": "extension.listen",
@@ -43,6 +57,14 @@
 			{
 				"command": "extension.stop",
 				"title": "Stop"
+			},
+			{
+				"command": "extension.dictation",
+				"title": "Dictation",
+				"icon": {
+					"light": "‎⁨icons8-microphone-filled50.png",
+					"dark": "icons8-microphone-filled-50.png"
+				  }
 			}
 		]
 	},

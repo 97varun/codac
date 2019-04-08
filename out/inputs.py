@@ -115,17 +115,39 @@ func_call_ips = [
     # 'invoke function max having parameters 2 and 10 and 5',
     # 'call the function func1 and pass it arguments 2 3 and 4',
 ]
-func_call_printf_ips = [
-    'call printf with string Hello World',
-    'call function printf with string type argument Hey',
-    'invoke the function printf with parameter Hello',
-    'call function printf with argument of string type Hello World',
-    'call function called printf with string Hey',
-    'execute function called printf with parameter of type string Demo Printf',
-    'call the function printf and pass it string argument Hello World',
-    'invoke function printf and pass string type parameter Test',
-    'execute function printf and give argument of type string Hi',
-    'return value of function printf with argument Hello World',
+f_c_printf_ips = [
+    # 'call printf with string Hello World',
+    # 'call function printf with string type argument Hey',
+    # 'invoke the function printf with parameter Hello',
+    # 'call function printf with argument of string type Hello World',
+    # 'call function called printf with string Hey',
+    # 'execute function called printf with parameter of type string Demoing Printf',
+    # 'call the function printf and pass it string argument Hello World',
+    # 'invoke function printf and pass string type parameter Test',
+    # 'execute function printf and give argument of type string Hi',
+    # 'return value of function printf with argument Hello World',
+    'call printf with parameters Hi and name',
+    'call the function printf with string Total Votes and integer parameter count',
+    'call printf with string Value of variable and parameter x',
+    'call printf with string Greetings and parameter user',
+    'invoke function printf with string Greetings and parameter person',
+    'invoke function printf with parameters of type string Value of Max and parameter max',
+    'call function printf with string Today is and integer parameter date',
+    'invoke function printf with parameters of type string Value of Max and float result',
+]
+
+f_c_scanf_ips = [
+    'call scanf with parameters mod d and address of x',
+    'call scanf and pass it string mod s and parameter text',
+    'invoke scanf and pass parameter mod s and parameter text',
+    'call scanf with string Enter Name: mod s and parameter user',
+    'call scanf and pass it string Enter Value: modulus d and parameter address of limit',
+    'call scanf with parameters mod d and an integer parameter address of x',
+    'invoke function scanf with string modulus s and parameter person',
+    'invoke function scanf with parameters of type string Value of Max mod d and address of max',
+    'call function scanf with string Today is modulus d and parameter address of date',
+    'invoke scanf with parameters string Value of Max is mod f and address of result',
+    'call function called scanf with parameters Today is modulus d and address of date',
 ]
 
 init_ips = [
@@ -220,11 +242,33 @@ loop_ips = [
 '''
 
 nav_ips = [
-    'Navigate to line number 10',
-    'Navigate to line 10',
-    'Navigate to function func',
-    'Navigate to line number 10',   
+    'goto line number 10',
+    'goto line 10',
+    'goto function func',
+    'goto the end of line',
+    'goto the start of line',
+    'go to the next line',
+    'go to the previous line',
+    'go three positions back',
+    'go back 2 places',
+    'go four places front',
+    'go 8 lines up',
+    'go a line up',
+    'go down one line',
+    'goto inner loop',
+    'go to the inner if statement',
 ]
+
+additional_ips = [
+    'exit',
+    'exit block',
+    'leave current block',
+    'start dictation',
+    'stop dictation',
+
+]
+
+
 
 pack_ips = [
     'include the package stdio',
@@ -341,3 +385,4 @@ if_ips = [
     'add a condition x less than 10',
     'add else'
 ]
+'''

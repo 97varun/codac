@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
 const child_process = require("child_process");
+let isDictation = false;
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 function activate(context) {
@@ -14,8 +15,12 @@ function activate(context) {
     statusBarItem.command = 'extension.listen';
     statusBarItem.show();
     let recognizer;
-    let sampleTree = new SampleTree();
-    vscode.window.createTreeView('suggestions', { treeDataProvider: sampleTree });
+    let suggest_tree = new SampleTree();
+    let dictate_tree = new SampleTree();
+    let errors_tree = new SampleTree();
+    vscode.window.createTreeView('suggestions', { treeDataProvider: suggest_tree });
+    vscode.window.createTreeView('dictation', { treeDataProvider: dictate_tree });
+    vscode.window.createTreeView('errors', { treeDataProvider: errors_tree });
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
@@ -34,14 +39,14 @@ function activate(context) {
             }
             else if (JSONdata.hasOwnProperty('error')) {
                 let tree = [new SampleNode(JSONdata.input, []), new SampleNode(JSONdata.error, [])];
-                sampleTree.setTree(tree);
+                suggest_tree.setTree(tree);
             }
             else {
                 let tree = [new SampleNode(JSONdata.input, [])];
                 for (let i = 1; i <= JSONdata.output.length; ++i) {
                     tree.push(new SampleNode(`${i}. ${JSONdata.output[i - 1].code} (${JSONdata.output[i - 1].construct})`, []));
                 }
-                sampleTree.setTree(tree);
+                suggest_tree.setTree(tree);
                 ed.insertText(JSONdata.output[0].code + '\n');
                 if (JSONdata.output[0].construct === 'function') {
                     const position = ed.getCursorPosition();
@@ -67,9 +72,54 @@ function activate(context) {
         statusBarItem.text = '💬 Listen';
         statusBarItem.command = 'extension.listen';
         statusBarItem.show();
+        isDictation = false;
     });
+    let disposable3 = vscode.commands.registerCommand('extension.dictation', () => {
+        isDictation = (isDictation) ? false : true;
+        console.log(isDictation);
+        if (isDictation)
+        {
+            statusBarItem.text = '✖️️ Stop Dictation';
+            statusBarItem.command = 'extension.stop';
+            statusBarItem.show();
+            recognizer = child_process.spawn('python', [`${__dirname}/dictate_audio.py`]);
+            recognizer.stdout.on('data', function (data) {
+                let JSONdata = JSON.parse(data);
+                console.log(JSONdata);
+                if (JSONdata.hasOwnProperty('status') && JSONdata.status === 'ready') {
+                    vscode.window.showInformationMessage(`${JSONdata.status}`);
+                }
+                else if (JSONdata.hasOwnProperty('error')) {
+                    let tree = [new SampleNode(JSONdata.input, []), new SampleNode(JSONdata.error, [])];
+                    dictate_tree.setTree(tree);
+                }
+                else {
+                    let tree = [new SampleNode('Your string :', [])];
+                    for (let i = 1; i <= JSONdata.output.length; ++i) {
+                        tree.push(new SampleNode(`${i}. ${JSONdata.output[i - 1]}`, []));
+                    }
+                    dictate_tree.setTree(tree);
+                    // append the tree and send to editor
+                }
+            });
+            recognizer.stderr.on('data', function (data) {
+                console.log(`error: ${data}`);
+            });
+            recognizer.on('close',  function (code) {
+                console.log('program stopped');
+                statusBarItem.text = '💬 Listen';
+                statusBarItem.command = 'extension.listen';
+                statusBarItem.show();
+            });
+        }
+        else{
+            vscode.commands.executeCommand('extension.stop');
+        }
+    });
+
     context.subscriptions.push(disposable1);
     context.subscriptions.push(disposable2);
+    context.subscriptions.push(disposable3);
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
@@ -101,6 +151,11 @@ class SampleTree {
     }
     setTree(tree) {
         this.tree = tree;
+        this._onDidChangeTreeData.fire();
+    }
+    updateTree(tree) {
+        console.log(this.tree)
+        this.tree = this.tree + tree;
         this._onDidChangeTreeData.fire();
     }
 }

@@ -156,7 +156,7 @@ class Grammar:
         self.start_symbol = start_symbol
         for rule in rules:
             add_rule(self, rule)
-        print('Created grammar with %d rules' % len(rules))
+        # print('Created grammar with %d rules' % len(rules))
 
     def parse_input(self, input):
         """

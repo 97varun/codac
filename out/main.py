@@ -38,13 +38,14 @@ def get_action(transcript):
 
 
 if __name__ == "__main__":
-        ips = [arr_ips, cond_ips, exp_ips, func_ips, func_param_ips,    #[0-4]
-               func_call_ips, func_call_printf_ips, init_ips, loop_ips, loop_init_ips, loop_cond_ips, #[5-10]
-               loop_update_ips, pack_ips, ptr_ips, ptr_init_ips, ptr_ips_1, return_stmt_ips, var_ips ]  #[11-17]
+        ips = [arr_ips, cond_ips, exp_ips, func_ips, func_param_ips, func_call_ips,     #[0-5]
+               f_c_printf_ips, f_c_scanf_ips, init_ips, loop_ips, loop_init_ips,        #[6-10]
+                loop_cond_ips, loop_update_ips, nav_ips, pack_ips, ptr_ips,             #[11-15]
+                ptr_init_ips, ptr_ips_1, return_stmt_ips, var_ips]                      #[16-19]
 
-        ips_not_implemented = [struct_ips, nav_ips]
+        ips_not_implemented = [struct_ips, additional_ips]
 
-        for ip in ips[6]:
+        for ip in ips[7]:
                 print('INP: %s' % ip)
                 parses = parse_input(grammar, ip)
 

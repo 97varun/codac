@@ -1,3 +1,6 @@
+from word2number import w2n
+
+
 class Annotator:
     """A base class for annotators."""
     def annotate(self, tokens):
@@ -49,6 +52,21 @@ class VariableNameAnnotator(Annotator):
 
         return [('$VariableName', '_'.join(tokens))]
 
+class StringTextAnnotator(Annotator):
+    def annotate(self, tokens):
+        mods = ['mod', 'modulus']
+        for x in mods:
+            while(len(tokens) > 0 and x in tokens):
+                try:
+                    idx = tokens.index(x)
+                    if (idx < len(tokens) - 1):
+                        del tokens[idx]
+                        tokens[idx] = '%' + tokens[idx]
+                    else:
+                        tokens[idx] = '%'
+                except ValueError:
+                    pass
+        return [('$StringText', ' '.join(tokens))]
 
 class NumberAnnotator(Annotator):
     def annotate(self, tokens):
@@ -80,4 +98,18 @@ class PositionalNumberAnnotator(Annotator):
             if tokens[0] in PosNumbers:
                 val = PosNumbers.index(tokens[0]) + 1
                 return [('$PosNum', val)]
+        return []
+
+
+class StringNumberAnnotator(Annotator):
+    def annotate(self, tokens):
+        if len(tokens) <= 4:
+            types = [int, float]
+            try:
+                if (type(w2n.word_to_num(' '.join(tokens))) in types):
+                    val = w2n.word_to_num(' '.join(tokens))
+                    # print(val)
+                    return [('$StrNumber', val)]
+            except ValueError:
+                pass
         return []

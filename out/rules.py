@@ -28,8 +28,6 @@ dec_constructs = [
     Rule('$DeclarationElement', '$DataTypeMention', itemgetter(0)),
     Rule('$DeclarationElement', '$VariableNameMention', itemgetter(0)),
     Rule('$DeclarationElement', '$Optionals $VariableNameMention', itemgetter(1), 0.25),
-    # Rule('$DeclarationElement', '$Optionals $ArrayNameMention', itemgetter(1), 1.0),
-    # Rule('$DeclarationElement', '$Optionals $FuncNameMention', itemgetter(1), 1.0),
 ]
 
 pack_rules = [
@@ -38,9 +36,6 @@ pack_rules = [
     Rule('$Include', '$Add', {}, 1.0),
     Rule('$Inclusion', '?$Optionals ?$PrePackName $PackName',
          lambda sems: merge_dicts(sems[2], sems[1]), 0),
-    # Rule('$Inclusion', '?$Optionals ?$PrePackName $VaraibleName',
-    #      lambda sems: merge_dicts({'pname' : sems[2]}, sems[1]), 0),
-
     # Can replace $PackageName with $variableName
     Rule('$PackName', '?$Optionals ?$Called $PackageName',
          lambda sems: merge_dicts(merge_dicts({'name': sems[2]},
@@ -201,11 +196,11 @@ func_call_rules = [
          lambda sems: merge_dicts(merge_dicts({'request': 'func_call'}, {'name': sems[3]}), sems[4]), 1.5),
 
     Rule('$FuncCallParaElements', '$Optionals ?$Pass $Parameters $FuncCallParaElements',
-         lambda sems: {'parameters': (sems[3]['parameters'])}, 0.0),
+         lambda sems: {'parameters': (sems[3]['parameters'],)}, 0.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement $Joins  $FuncCallParaElements',
          lambda sems: {'parameters': (sems[0], sems[2]['parameters'])}, 1.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
-         lambda sems: {'parameters': (sems[0])}, 0.5),
+         lambda sems: {'parameters': (sems[0],)}, 0.5),
    
     Rule('$FuncCallParaElement', '$Number', itemgetter(0), 1.0),
     Rule('$FuncCallParaElement', '$VariableName', itemgetter(0), 0.5),
@@ -222,18 +217,25 @@ func_call_rules = [
 ]
 
 add_fn_call_rules = [
-    Rule('$FuncCall', '$Call ?$Optional ?$Function ?$PreFnName $FnCallName $FnCallParaElements',
+    Rule('$FuncCall', '$Call ?$Optional ?$Function ?$PreFnName $FnCallType $FnCallParaElements',
          lambda sems: merge_dicts(merge_dicts({'request': 'func_call'}, {'name': sems[4]}), sems[5]), 1.5),
-    Rule('$FnCallParaElements', '?$Optionals ?$Pass ?$PreString $Parameter ?$PreString $VariableName',
-         lambda sems: {'parameter': sems[5]}, 1.0),
-    Rule('$FnCallParaElements', '?$Optionals ?$Pass $PreString ?$Parameter ?$PreString $VariableName',
-         lambda sems: {'parameter': sems[5]}, 1.0),
+    Rule('$FnCallParaElements', '?$Optionals ?$Pass ?$PreString $Parameters ?$PreString $FuncParameter',
+         itemgetter(5), 1.0),
+    Rule('$FnCallParaElements', '?$Optionals ?$Pass $PreString $FuncParameter',
+         itemgetter(3), 1.0),
+    Rule('$FuncParameter', '$StringText',
+    lambda sems: {'parameters': (sems[0],)}, 0.5),
+    Rule('$FuncParameter', '$StringText $Joins ?$FnDataTypeElement1 ?$Parameter $PreName',
+    lambda sems: {'parameters': (sems[0], sems[4])}, 0.5),
 
-    Rule('$PreString', '?of ?type string ?type', {}, 0.5),
-    Rule('$FnCallName', 'printf', 'printf', 1.0),
-    Rule('$FnCallName', 'print f', 'printf', 1.0),
-    Rule('$FnCallName', 'print', 'printf', 1.0),
-
+    Rule('$PreString', '?of ?type string ?type', {}, 1.0),
+    Rule('$FnCallType', 'printf', 'printf', 1.5),
+    Rule('$FnCallType', 'print f', 'printf', 1.5),
+    Rule('$FnCallType', 'print', 'printf', 1.5),
+    Rule('$FnCallType', 'scanf', 'scanf', 1.5),
+    Rule('$FnCallType', 'scan f', 'scanf', 1.5),
+    Rule('$Mod', 'mod', {}, 0),
+    Rule('$Mod', 'modulus', {}, 0),
 ]
 
 loop_define_rules = [
@@ -257,13 +259,7 @@ loop_init_rules = [
          lambda sems: merge_dicts({'request': 'Append'}, sems[2]), 0.0),
     Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement',
          lambda sems: merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), 0.0),
-    # Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement $INITIALIZATION',
-    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
-    # Rule('$LoopInit', '$LoopInitElement $LoopInitElement $INITIALIZATION $LoopInitElement',
-    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
-    # Rule('$LoopInit', '$LoopInitElement $INITIALIZATION $LoopInitElement $LoopInitElement',
-    #      lambda sems: merge_dicts(merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), sems[3]), 0.0),
-
+    
     Rule('$LoopInitElement', '?$Control $LoopVarNames',
         lambda sems: merge_dicts(sems[1], sems[0]), 0.0),
     Rule('$LoopInitElement', '$PreName',
@@ -427,29 +423,28 @@ ptr_rules = [
 ]
 
 return_stmt_rules = [
-     Rule('$ROOT', '$Return $ReturnElements',
-           lambda sems: merge_dicts({'request': 'return'}, sems[1]), 0.0),
-     Rule('$ReturnElements', '$ReturnElement $ReturnValue',
-           lambda sems: {'value': (sems[0], sems[1])}, 0.5),
-     Rule('$ReturnElements', '$Optionals $ReturnElement $ReturnValue',
-            lambda sems: {'value': (sems[1], sems[2])}, 1.0),
-     Rule('$ReturnElements', '$PreName',
-           lambda sems: {'value': ('variable', sems[0])}, 0.0),
-     Rule('$ReturnElements', '$Number',
-           lambda sems: {'value': ('number', sems[0])}, 1.5),
-     Rule('$ReturnElements', '$Null',
-           lambda sems: {'value': ('Null', 'null')}, 2.5),
+    Rule('$ROOT', '$Return $ReturnElements',
+         lambda sems: merge_dicts({'request': 'return'}, sems[1]), 0.0),
+    Rule('$ReturnElements', '$ReturnElement $ReturnValue',
+         lambda sems: {'value': (sems[0], sems[1])}, 0.5),
+    Rule('$ReturnElements', '$Optionals $ReturnElement $ReturnValue',
+         lambda sems: {'value': (sems[1], sems[2])}, 1.0),
+    Rule('$ReturnElements', '$PreName',
+         lambda sems: {'value': ('variable', sems[0])}, 0.0),
+    Rule('$ReturnElements', '$Number',
+         lambda sems: {'value': ('number', sems[0])}, 1.5),
+    Rule('$ReturnElements', '$Null',
+         lambda sems: {'value': ('Null', 'null')}, 2.5),
 
-     Rule('$Null', 'null', {}, 1.0),
-     Rule('$ReturnValue', '$PreName', itemgetter(0), 0.0),
-     Rule('$ReturnValue', '$Number', 'num', 0.5),
+    Rule('$Null', 'null', {}, 1.0),
+    Rule('$ReturnValue', '$PreName', itemgetter(0), 0.0),
+    Rule('$ReturnValue', '$Number', 'num', 0.5),
 
-    #  Rule('$ReturnElement', 'value', 'value', 2.0),           
-     Rule('$ReturnElement', '$Variable', 'variable', 0.0),
-     Rule('$ReturnElement', 'array', 'array', 0.0),
-     Rule('$ReturnElement', 'string', 'string', 0.0),
-     Rule('$ReturnElement', 'expression', 'exp', 0.0),
-     Rule('$ReturnElement', '$Function', 'function', 0.0),
+    Rule('$ReturnElement', '$Variable', 'variable', 0.0),
+    Rule('$ReturnElement', 'array', 'array', 0.0),
+    Rule('$ReturnElement', 'string', 'string', 0.0),
+    Rule('$ReturnElement', 'expression', 'exp', 0.0),
+    Rule('$ReturnElement', '$Function', 'function', 0.0),
 ]
 
 if_rules = [
@@ -475,13 +470,63 @@ if_rules = [
      Rule('$Condition', 'condition', {}),
 ]
 
+nav_rules = [
+    Rule('$ROOT', '$Nav ?$Determiner $NavElements',
+         lambda sems: merge_dicts({'request': 'navigate'}, sems[2]), 0.0),
+    Rule('$NavElements', '$NavElement $NavElement ?$NavElement',
+         lambda sems: merge_dicts(merge_dicts(sems[0], sems[1]), sems[2]), 0.0),
+    Rule('$NavElements', '$SpecialElems $V',
+         lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.0),
+
+    Rule('$NavElement', '$JumpType', itemgetter(0), 1.0),
+    Rule('$NavElement', '$JumpDirection', itemgetter(0), 1.0),
+    Rule('$NavElement', '$JumpAmount', itemgetter(0), 1.0),
+
+    Rule('$JumpType', '$Line', {'construct': 'line'}, 0),
+    Rule('$JumpType', '$Place', {'construct': 'position'}, 0),
+    Rule('$JumpType', '$SpecialElems', itemgetter(0), 0),
+    Rule('$SpecialElems', 'function', {'construct': 'function'}, 0),
+    Rule('$SpecialElems', 'loop', {'construct': 'loop'}, 0),
+
+    Rule('$JumpDirection', 'up', {'direction': 'up'}, 0),
+    Rule('$JumpDirection', 'down', {'direction': 'down'}, 0),
+    Rule('$JumpDirection', 'left', {'direction': 'left'}, 0),
+    Rule('$JumpDirection', 'right', {'direction': 'right'}, 0),
+    Rule('$JumpDirection', 'previous', {'direction': 'back'}, 0),
+    Rule('$JumpDirection', 'next', {'direction': 'next'}, 0),
+    Rule('$JumpDirection', 'back', {'direction': 'back'}, 0),
+    Rule('$JumpDirection', 'front', {'direction': 'next'}, 0),
+    Rule('$JumpDirection', 'end ?of', {'direction': 'end'}, 0),
+    Rule('$JumpDirection', 'start ?of', {'direction': 'start'}, 0),
+    Rule('$JumpDirection', 'inner', {'direction': 'inner'}, 0),
+    Rule('$JumpDirection', 'outer', {'direction': 'outer'}, 0),
+
+    Rule('$JumpAmount', '?$Num $NumTypes', itemgetter(1), 0),
+
+    Rule('$Nav', 'go ?to', {}, 1.0),
+    Rule('$Nav', 'goto', {}, 1.0),
+    Rule('$Num', 'number', {}, 0.5),
+
+    Rule('$NumTypes', '$Number', lambda sems: {'value': sems[0]}, 0.5),
+    Rule('$NumTypes', '$StrNumber', lambda sems: {'value': sems[0]}, 0.5),
+    Rule('$NumTypes', '$PosNum', lambda sems: {'value': sems[0]}, 0.5),
+
+    Rule('$Line', 'line', {}, 0),
+    Rule('$Place', 'lines', {}, 0),
+    Rule('$Place', 'place', {}, 0),
+    Rule('$Place', 'places', {}, 0),
+    Rule('$Place', 'position', {}, 0),
+    Rule('$Place', 'positions', {}, 0),
+]
+
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules + ptr_rules
 rules_2 = func_name_rules + func_param_rules + func_call_rules + add_fn_call_rules
 rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules + loop_update_rules 
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
-         optionals + cond_rules + exp_rules + return_stmt_rules + if_rules
+          cond_rules + exp_rules + return_stmt_rules + if_rules
+rules_5 = nav_rules + optionals
 
-rules = rules_1 + rules_2 + rules_3 + rules_4
+rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
 
 grammar = Grammar(
     rules=rules,
@@ -491,6 +536,8 @@ grammar = Grammar(
         VariableNameAnnotator(),
         NumberAnnotator(),
         PackageTypeAnnotator(),
-        PositionalNumberAnnotator()
+        PositionalNumberAnnotator(),
+        StringNumberAnnotator(),
+        StringTextAnnotator()
     ]
 )
