@@ -4,6 +4,7 @@ from operator import itemgetter
 
 
 def merge_dicts(*dicts):
+    # print(dicts)
     result = dict()
     for dct in dicts:
         if not dct:
@@ -115,6 +116,12 @@ var_name_rules = [
 arr_name_rules = [
     Rule('$VariableNameMention', 'array', {'construct': 'array'}, 0.5),
     Rule('$PreVariable', 'array', {'construct': 'array'}, 1.0),
+
+
+    # Rule('VariableName', '$VariableName $ArrayIndex $VariableName',)  #a of i
+    # Rule('ArrayIndex', '$Of',)                      #a of i
+    # Rule('ArrayIndex', '$Sub'),                     #a sub i
+    # Rule('ArrayIndex', '?$Optional $Index'),        #at index i
 ]
 
 arr_size_rules = [
@@ -242,7 +249,7 @@ func_call_rules = [
     Rule('$Call', 'call', {}, 0.0),
     Rule('$Call', 'invoke', {}, 0.0),
     Rule('$Call', 'execute', {}, 0.0),
-    Rule('$Call', '$Return', {}, 0.5),
+    # Rule('$Call', '$Return', {}, 0.5),
     Rule('$Pass', 'pass ?it', {}, 0.5),
     Rule('$Pass', 'give ?it', {}, 0.5),
     Rule('$Function', 'function', {}, 0.5),
@@ -466,27 +473,27 @@ ptr_rules = [
 
 return_stmt_rules = [
     Rule('$ROOT', '$Return $ReturnElements',
-         lambda sems: merge_dicts({'request': 'return'}, sems[1]), 0.0),
+         lambda sems: merge_dicts({'request': 'declare', 'construct': 'return'}, sems[1]), 0),
     Rule('$ReturnElements', '$ReturnElement $ReturnValue',
-         lambda sems: {'value': (sems[0], sems[1])}, 0.5),
+         lambda sems: merge_dicts(sems[0], sems[1]), 0.5),
     Rule('$ReturnElements', '$Optionals $ReturnElement $ReturnValue',
-         lambda sems: {'value': (sems[1], sems[2])}, 1.0),
-    Rule('$ReturnElements', '$PreName',
-         lambda sems: {'value': ('variable', sems[0])}, 0.0),
-    Rule('$ReturnElements', '$Number',
-         lambda sems: {'value': ('number', sems[0])}, 1.5),
+         lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
+    Rule('$ReturnElements', '$ReturnValue', itemgetter(0), 0),
+
     Rule('$ReturnElements', '$Null',
-         lambda sems: {'value': ('Null', 'null')}, 2.5),
+         lambda sems: {'value': ('value', 'null')}, 2.5),
 
+    Rule('$ReturnValue', '$PreFnName $Exp',
+         lambda sems: {'value': sems[1]}, 1.0),
+    Rule('$ReturnValue', '$Exp',
+         lambda sems: {'value': sems[0]}, 0),
+
+    Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0.0),
+    Rule('$ReturnElement', 'array', {'type': 'array'}, 0.0),
+    Rule('$ReturnElement', 'string', {'type': 'string'}, 0.0),
+    Rule('$ReturnElement', 'expression', {'type': 'exp'}, 0.0),
+    Rule('$ReturnElement', '$Function', {'type': 'function'}, 0.0),
     Rule('$Null', 'null', {}, 1.0),
-    Rule('$ReturnValue', '$PreName', itemgetter(0), 0.0),
-    Rule('$ReturnValue', '$Number', 'num', 0.5),
-
-    Rule('$ReturnElement', '$Variable', 'variable', 0.0),
-    Rule('$ReturnElement', 'array', 'array', 0.0),
-    Rule('$ReturnElement', 'string', 'string', 0.0),
-    Rule('$ReturnElement', 'expression', 'exp', 0.0),
-    Rule('$ReturnElement', '$Function', 'function', 0.0),
 ]
 
 if_rules = [
@@ -563,6 +570,37 @@ nav_rules = [
     Rule('$Place', 'positions', {}, 0),
 ]
 
+struct_name_rules = [
+    Rule('$ROOT', '$Declare ?$Determiner $StructNameMention',
+         lambda sems: merge_dicts({'request': 'include'}, sems[2]), 1.0),
+    Rule('$StructNameMention', '$StructElement', itemgetter(0), 0),
+    Rule('$StructNameMention', '$StructElement $StructVarElements',
+         lambda sems: merge_dicts(sems[0], sems[1]), 0),
+
+    Rule('$StructElement', '$Struct ?$PreStruct $VariableName',
+         lambda sems: merge_dicts({'name': sems[2]}, sems[0]), 0),
+    Rule('$StructVarElements', '$PreType ?$Struct $Vars $VarNames',
+         lambda sems: merge_dicts(sems[3], sems[1]), 0),
+
+    Rule('$VarNames', '$VariableName $Joins $VarNames',
+         lambda sems: {'parameters': (sems[2]['parameters'], )}, 1.2),
+    Rule('$VarNames', '$VariableName $VarNames',
+         lambda sems: {'parameters': (sems[1]['parameters'] + (sems[0], ))}, 0.5),
+    Rule('$VarNames', '$VariableName',
+         lambda sems:{'parameters': (sems[0],)}, 0),
+
+    Rule('$Struct', 'struct',  {'construct': 'struct'}, 1.0),
+    Rule('$Struct', 'structure', {'construct': 'struct'}, 1.0),
+
+    Rule('$PreStruct', 'called', {}, 0.5),
+    Rule('$PreStruct', '$PreType $PreStructElem', {}, 0.0),
+    Rule('$PreStructElem', 'name ', {}, 0.5),
+    Rule('$PreStructElem', '?$Struct $Tag', {}, 0.5),
+    Rule('$Vars', 'variable', {}, 0.5),
+    Rule('$Vars', 'variables', {}, 0.5),
+    Rule('$Tag', 'tag', {}, 0.5),
+]
+
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules\
      + ptr_rules
 rules_2 = func_name_rules + func_param_rules + func_call_rules\
@@ -571,6 +609,7 @@ rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules\
      + loop_update_rules
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
           cond_rules + exp_rules + return_stmt_rules + if_rules
+#    + struct_name_rules
 rules_5 = nav_rules + optionals
 
 rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
