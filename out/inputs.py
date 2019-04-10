@@ -258,6 +258,12 @@ nav_ips = [
     'goto inner loop',
     'go to the inner if statement',
 ]
+edit_ips = [
+    'delete function max',          #Remove type commands
+    'delete variable x',
+    ''
+    'change lhs to rhs',          #Update type commands
+]
 
 additional_ips = [
     'exit',
@@ -267,7 +273,6 @@ additional_ips = [
     'stop dictation',
 
 ]
-
 
 
 pack_ips = [
@@ -318,7 +323,7 @@ ptr_ips_1 = [
     'declare a pointer p',
     'declare a pointer to pointer to integer',      #ERROR
     'declare pointer ptr of integer',
-    'declare pointer of pointer of float called p', #ERROR
+    'declare pointer of pointer of float called p',  #ERROR
 ]
 
 return_stmt_ips = [
@@ -340,10 +345,19 @@ return_stmt_ips = [
 ]
 
 struct_ips = [
-    'define a structure called employee with struct variables emp1 emp2 emp3',
-    'declare a structure employee ',
-    'declare a structure with structure tag employee and variables emp1 and emp2',
-    'create a structure employee with variables emp1 and emp2',
+    'declare a structure called Employee',
+    'declare a structure with name books',
+    'create a structure with tag Address',
+    'declare a structure with structure tag employee ',
+    'create a structure called Books with variable book1',
+    'define a structure with name employee having struct variable emp1',
+    'create a structure called Books with variables book1 and book2',
+    'define a structure with tag Address and struct variables addr1 and addr2',
+    'define a structure employee with struct variables emp1 emp2 emp3',
+    'create a structure called Address and struct variables addr1 addr2 and addr3',
+    'create a structure with struct tag Books and variables book1 book2 book3',
+    'define a structure with tag Employee and struct variables x and y and z',
+    'declare a structure with structure tag address and variables var1 var2 and var3',     #erroneous (due to length)
 ]
 
 var_ips = [
