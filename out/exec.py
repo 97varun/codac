@@ -400,7 +400,11 @@ def generate_code(sems, filename, line):
     for sem in sems:
         if 'request' not in sem or 'construct' not in sem or\
            sem['request'] not in ['declare', 'add', 'include']:
-            continue
+            if 'request' in sem and sem['request'] in ['navigate']:
+                codes.append(sem)
+                break
+            else:
+                continue
         new_ext = deepcopy(ast.ext)
         new_fmt = deepcopy(fmt)
         coord, node = handle_req(new_ext, new_fmt, sem, line)

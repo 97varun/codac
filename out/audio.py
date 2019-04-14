@@ -122,7 +122,7 @@ def main():
         line = int(sys.argv[2])
 
     os.environ.update({'GOOGLE_APPLICATION_CREDENTIALS':
-                       'C:/Users/Varun/Downloads/credentials.json'})
+                       '/Users/himanshusonthalia/Desktop/ProjectCodac/credentials.json'})
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
@@ -136,7 +136,7 @@ def main():
             phrases=[
                 # keywords
                 'add', 'declare', 'include', 'stdio', 'function', 'array',
-                'return',
+                'return', 'go', 'goto', 'go to',
                 # variable names
                 'a', 'b', 'c', 'i', 'j', 'k', 'x', 'y', 'z', 'found',
                 # helplessness

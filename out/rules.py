@@ -42,7 +42,7 @@ pack_rules = [
     Rule('$ROOT', '$Include $Inclusion',
          lambda sems: merge_dicts({'request': 'include'}, sems[1])),
     Rule('$Include', 'include', {}, 1.0),
-    Rule('$Include', '$Add', {}, 1.0),
+    # Rule('$Include', '$Add', {}, 1.0),
     Rule('$Inclusion', '?$Optionals ?$PrePackName $PackName',
          lambda sems: merge_dicts(sems[2], sems[1]), 0),
     # Can replace $PackageName with $variableName
@@ -551,7 +551,7 @@ nav_rules = [
          lambda sems: merge_dicts({'request': 'navigate'}, sems[2]), 0.0),
     Rule('$NavElements', '$NavElement $NavElement ?$NavElement',
          lambda sems: merge_dicts(sems[0], sems[1], sems[2]), 0.0),
-    Rule('$NavElements', '$SpecialElems $V',
+    Rule('$NavElements', '$SpecialElems $VariableName',
          lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.0),
 
     Rule('$NavElement', '$JumpType', itemgetter(0), 1.0),
@@ -559,7 +559,7 @@ nav_rules = [
     Rule('$NavElement', '$JumpAmount', itemgetter(0), 1.0),
 
     Rule('$JumpType', '$Line', {'construct': 'line'}, 0),
-    Rule('$JumpType', '$Place', {'construct': 'position'}, 0),
+    Rule('$JumpType', '$Place', {'construct': 'character'}, 0),
     Rule('$JumpType', '$SpecialElems', itemgetter(0), 0),
     Rule('$SpecialElems', 'function', {'construct': 'function'}, 0),
     Rule('$SpecialElems', 'loop', {'construct': 'loop'}, 0),
@@ -593,6 +593,8 @@ nav_rules = [
     Rule('$Place', 'places', {}, 0),
     Rule('$Place', 'position', {}, 0),
     Rule('$Place', 'positions', {}, 0),
+    Rule('$Place', 'character', {}, 0),
+    Rule('$Place', 'characters', {}, 0),
 ]
 
 struct_name_rules = [

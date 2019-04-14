@@ -16,8 +16,6 @@ from time import sleep
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
-sentence_holder = []
-
 
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -89,7 +87,7 @@ def input_parsing(transcript):
     if parses:
         score_parses(parses)
     else:
-        return json.dumps({'input': transcript, 'error': 'could not parse'})
+        return json.dumps({'input': transcript, 'Error': 'Could not parse :' + transcript})
     parses_sems = [dict(y) for y in set(tuple(sorted(x.semantics.items())) for x in parses)]
     parses_sems.sort(key=lambda x: (len(x), x['score']), reverse=True)
 
@@ -120,9 +118,6 @@ def listen_print_loop(responses):
         if not response.results:
             continue
 
-        # The `results` list is consecutive. For streaming, we only care about
-        # the first result being considered, since once it's `is_final`, it
-        # moves on to considering the next utterance.
         result = response.results[0]
         if not result.alternatives:
             continue
@@ -130,9 +125,9 @@ def listen_print_loop(responses):
         # Display the transcription of the top alternative.
         transcript = result.alternatives[0].transcript
         # action = input_parsing(transcript.lower())
-        global sentence_holder
-        sentence_holder.append(transcript)
-        print(json.dumps({'input': 'dict_ip', 'output': sentence_holder}))
+
+        print(json.dumps({'input': 'dict_ip', 'output': transcript,
+                         'audio_type': 'dictation'}))
 
         sys.stdout.flush()
         break
@@ -150,7 +145,7 @@ def main():
         sample_rate_hertz=RATE,
         language_code=language_code,
         speech_contexts=[speech.types.SpeechContext(
-            phrases=[],
+            phrases=['b', 'd', 'i', 'j', 'k', 'l', 'o', 's', 't', 'x', 'y', 'z', 'std', 'lib', 'mod', 'modulus'],
         )])
     streaming_config = types.StreamingRecognitionConfig(
         config=config,

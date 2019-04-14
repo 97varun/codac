@@ -60,8 +60,69 @@ class Codac {
 		this.statusBarItem.show();
 	}
 
+	public async navigate(sem: any) {
+		let self = this;
+		let cur_cursor = self.editor.getCursorPosition(); //cur_cursor = line,character
+		try {
+			//move across line[s]
+			if (sem.hasOwnProperty('construct') && sem.construct === 'line') {
+				if (sem.hasOwnProperty('direction') ) {
+					sem.direction = (sem.direction === 'next') ? "down" : sem.direction;
+					sem.direction = (sem.direction === 'back') ? "up" : sem.direction;
+					sem.direction = (sem.direction === 'start') ? "wrappedLineFirstNonWhitespaceCharacter" : sem.direction;
+					sem.direction = (sem.direction === 'end') ? "wrappedLineLastNonWhitespaceCharacter" : sem.direction;
+				}
+				if (!(sem.hasOwnProperty('value'))) {
+					sem.value = 1;
+				}
+				if (!(sem.hasOwnProperty('direction'))) {
+					self.editor.moveCursor(new vscode.Position(sem.value - 1, 0));
+					await vscode.commands.executeCommand('cursorEnd');
+					return;									
+				}
+				vscode.commands.executeCommand("cursorMove", {
+					to: sem.direction,
+					by: "line",
+					select: false,
+					value: sem.value
+				});
+			}
+			//move character by character
+			else if (sem.hasOwnProperty('construct') && sem.construct === 'character') {
+				if (sem.hasOwnProperty('direction') ) {
+					sem.direction = (sem.direction === 'next') ? "right" : sem.direction;
+					sem.direction = (sem.direction === 'back') ? "left" : sem.direction;
+				}
+				if (!(sem.hasOwnProperty('value'))) {
+					sem.value = 1;
+				}
+				if (!(sem.hasOwnProperty('direction'))) {
+					sem.direction = "right";						
+				}
+				vscode.commands.executeCommand("cursorMove", {
+					to: sem.direction,
+					by: "character",
+					select: false,
+					value: sem.value
+				});
+			}
+			//for goto func types - goto visible window's first line in a function.
+			else {
+				vscode.commands.executeCommand("cursorMove", {
+					to: "viewPortTop",
+					by: "line",
+					select: false,
+					value: 1
+				});
+			}
+		} catch (error) {
+			console.log(error);
+		}
+	}
+
 	public async handleOutput(tree: SampleTree, data: any) {
 		let self = this;
+		console.log("HandleOp func:");
 		console.log(data.toString(), data.toString().length);
 		let JSONdata = JSON.parse(data.toString());
 		if (JSONdata.hasOwnProperty('status') && JSONdata.status === 'ready') {
@@ -69,7 +130,20 @@ class Codac {
 		} else if (JSONdata.hasOwnProperty('error')) {
 			let treeData = [new SampleNode(JSONdata.error, [])];
 			tree.setTree(treeData);
-		} else {
+			// self.insertError(JSONdata.error);
+		} else if (JSONdata.hasOwnProperty('audio_type') && JSONdata.audio_type === 'dictation') {
+			let treeData = [new SampleNode(`${JSONdata.output}`, [])];
+			tree.updateTree(treeData);
+		} else{
+			if (JSONdata[1].hasOwnProperty('request')) {
+				if (JSONdata[1]['request'] === 'navigate'){
+					self.navigate(JSONdata[1]);
+					return;
+				}
+				// else if (JSONdata[0]['type'] === 'error') {
+				// 	self.insertError(JSONdata[0].error);					
+				// }
+			}
 			let treeData = [new SampleNode(JSONdata[0].input, [])];
 			for (let i = 1; i < JSONdata.length; ++i) {
 				treeData.push(new SampleNode(`${i}. ${JSONdata[i].output}`, []));
@@ -80,12 +154,14 @@ class Codac {
 	}
 
 	public async replaceCode(statement: string, cursor: number) {
-		let self = this;		
-		await vscode.commands.executeCommand('editor.action.selectAll');
-		await vscode.commands.executeCommand('editor.action.deleteLines');
-		await self.editor.insertText(statement);
-		await self.editor.moveCursor(new vscode.Position(cursor - 1, 0));
-		await vscode.commands.executeCommand('cursorEnd');
+		let self = this;
+		if (statement) {
+			await vscode.commands.executeCommand('editor.action.selectAll');
+			await vscode.commands.executeCommand('editor.action.deleteLines');
+			await self.editor.insertText(statement);
+			await self.editor.moveCursor(new vscode.Position(cursor - 1, 0));
+			await vscode.commands.executeCommand('cursorEnd');				
+		}
 	}
 
 	public startRecognizer(choice: string) {
@@ -99,14 +175,18 @@ class Codac {
 			 	`${self.editor.getCursorPosition().line + 1}`
 			],
 			'dictate_audio': [
-				'dictate_audio.py'
+				`${__dirname}/dictate_audio.py`
 			]
 		};
 		if (choice === 'audio') {
 			this.isListening = true;
 			tree = this.suggestTree;
+			self.setStatusBarBtn('✖️️ Stop', 'extension.stop');
 		} else {
 			tree = this.dictateTree;
+			let treeData = [new SampleNode('Your String :', [])];
+			tree.setTree(treeData);
+			self.setStatusBarBtn('✖️️ Stop Dictation', 'extension.dictation');
 		}
 
 		self.recognizer = child_process.spawn(
@@ -119,6 +199,8 @@ class Codac {
 				self.handleOutput(tree, data);
 			} catch(e) {
 				console.log(e);
+				console.log('Could not handle output.');
+				// self.insertError('Could not handle output.');
 			}
 		});
 	
@@ -134,10 +216,12 @@ class Codac {
 		});
 	
 		self.recognizer.stderr.on('data', function(data: string) {
-			console.log(`error: ${data}`);
+			console.log(`ERROR: ${data}`);
+			console.log(data);
+			// console.log(data.toString());
+			// self.insertError('Recognizer stderr :' + data.toString());
 		});
 
-		self.setStatusBarBtn('✖️️ Stop', 'extension.stop');
 	}
 
 	public stopRecognizer() {
@@ -153,7 +237,6 @@ class Codac {
 				this.stopRecognizer();
 			}
 			this.startRecognizer('dictate_audio');
-			this.setStatusBarBtn('✖️️ Stop Dictation', 'extension.stop');
 		} else {
 			this.stopRecognizer();			
 		}
@@ -194,6 +277,13 @@ class SampleTree implements vscode.TreeDataProvider<vscode.TreeItem> {
 	public setTree(tree: SampleNode[]) {
 		console.log(tree);
 		this.tree = tree;
+		this._onDidChangeTreeData.fire();
+	}
+
+	public updateTree(tree: SampleNode[]) {
+		console.log('The tree after update is : ');
+		console.log(tree);
+        this.tree.push(...tree);
 		this._onDidChangeTreeData.fire();
 	}
 }
