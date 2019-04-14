@@ -5,7 +5,7 @@ from six import StringIO
 from types import FunctionType
 from operator import itemgetter
 
-MAX_CELL_CAPACITY = 1000  # upper bound on number of parses in one chart cell
+MAX_CELL_CAPACITY = 100000  # upper bound on number of parses in one chart cell
 
 
 # Rule =========================================================================

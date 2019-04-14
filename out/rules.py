@@ -24,6 +24,11 @@ decl_rules = [
     Rule('$Declaration',
          '$DeclarationElement $DeclarationElement $DeclarationElement',
          lambda sems: merge_dicts(sems[0], sems[1], sems[2])),
+    Rule('$Declaration',
+         '$DeclarationElement $DeclarationElement $DeclarationElement\
+          $DeclarationElement',
+         lambda sems: merge_dicts(sems[0], sems[1], sems[2], sems[3])),
+    Rule('$DeclarationElement', '$InitElement', itemgetter(0)),
 ]
 
 dec_constructs = [
@@ -79,6 +84,7 @@ init_rules = [
     Rule('$Hs', '$Hs $Optionals', itemgetter(0), 0.25),
     Rule('$Hs', '$Variable $VariableName', lambda sems: ('name', sems[1])),
     Rule('$Hs', '$VariableName', lambda sems: ('name', sems[0])),
+    Rule('$Hs', '$ArrRef', itemgetter(0), 0.25),
 
     Rule('$ROOT', '$Assign $Assignment',
          lambda sems: merge_dicts({'request': 'declare',
@@ -111,6 +117,14 @@ var_name_rules = [
     Rule('$Variable', 'variable', {'construct': 'variable'}, 1.0),
     Rule('$PreVariable', '$Called', {}, 1.0),
     Rule('$PreVariable', 'name', {}, 1.0),
+    Rule('$VariableName', '$PreVariable $VarName',
+         itemgetter(1)),
+    Rule('$VariableName', '$ScopeVariable', itemgetter(0)),
+    Rule('$PreVariable', 'function', {'construct': 'function'}),
+    Rule('$PreVariable', 'array', {'construct': 'array'}),
+    Rule('$PreVariable', 'package', {'constrct': 'package'}),
+    Rule('$PreVariable', 'index'),
+    Rule('$PreVariable', '$DataType', lambda sems: {'type': sems[0]}),
 ]
 
 arr_name_rules = [
@@ -285,7 +299,7 @@ add_fn_call_rules = [
 ]
 
 loop_define_rules = [
-    Rule('$ROOT', '$Define $Optionals $Definition',
+    Rule('$ROOT', '$Define ?$Optionals $Definition',
          lambda sems: merge_dicts({'request': 'declare'}, sems[2]), 0.5),
     Rule('$Define', 'define', itemgetter(0)),
     Rule('$Define', 'insert', itemgetter(0)),
@@ -300,12 +314,14 @@ loop_define_rules = [
     Rule('$Loop', 'loop', itemgetter(0), 1),
 ]
 
-# TODO: Loop Init Rules not complete (i = 0, i set to 0)
 loop_init_rules = [
     Rule('$ROOT', '$Add ?$Optional $LoopInit',
          lambda sems: merge_dicts({'request': 'add'}, sems[2]), 0.0),
     Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement',
          lambda sems: merge_dicts(sems[0], sems[1], sems[2]), 0.0),
+    Rule('$LoopInit', '$LoopInitElement $LoopInitElement $LoopInitElement\
+         $LoopInitElement',
+         lambda sems: merge_dicts(sems[0], sems[1], sems[2], sems[3]), 0.0),
 
     Rule('$LoopInitElement', '?$Control $LoopVarNames',
          lambda sems: merge_dicts(
@@ -313,6 +329,16 @@ loop_init_rules = [
     Rule('$LoopInitElement', '$PreName',
          lambda sems: {'name': sems[0]}, 0.0),
     Rule('$LoopInitElement', '$FnDataTypeElement1', itemgetter(0), 0.0),
+
+    # for initializing loop variables and variable declarations
+    Rule('$LoopInitElement', '$InitElement', itemgetter(0)),
+    Rule('$InitElement', '$Equal ?$To $Exp',
+         lambda sems: {'value': sems[2]}, 0.5),
+    Rule('$InitElement', '$Optionals $Exp',
+         lambda sems: {'value': sems[1]}, 0.5),
+    Rule('$Equal', 'initialize', {}, 0.25),
+    Rule('$Equal', 'initialized', {}, 0.25),
+    Rule('$Equal', 'set', {}, 0.25),
 
     Rule('$Control', 'control', {}, 0.5),
     Rule('$Control', '$Loop', {}, 0.5),
@@ -395,7 +421,7 @@ complement = {
     '<=': '>',
     '>': '<=',
     '>=': '<',
-    '=': '!=',
+    '==': '!=',
 }
 
 cond_rules = [
@@ -417,9 +443,7 @@ cond_rules = [
     Rule('$Not', 'not', itemgetter(0), 0.5),
     Rule('$RhsCond', '$HsCond', itemgetter(0)),
 
-    Rule('$HsCond', '$Hs', itemgetter(0)),
-    Rule('$HsCond', '$Number', lambda sems: ('value', sems[0]), 0.5),
-    # Rule('$HsCond', '$Exp', lambda sems: ('value', sems[0]), 0.5),
+    Rule('$HsCond', '$Exp', itemgetter(0), 0.5),
 
     Rule('$Comparator', '$GreaterLess ?$Than', itemgetter(0)),
     Rule('$Comparator', '$GreaterLess ?$Than ?$Or $Equal ?$To',
@@ -442,7 +466,7 @@ exp_rules = [
     Rule('$Exp', '$Exp $UnOp', lambda sems: ('p' + sems[1], sems[0])),
     Rule('$Exp', '$Exp $BinOp $Exp', lambda sems: (sems[1], sems[0], sems[2])),
     Rule('$Exp', '$Number', lambda sems: ('value', sems[0]), 0.5),
-    Rule('$Exp', '?$Variable $VariableName', lambda sems: ('name', sems[1])),
+    Rule('$Exp', '$VariableName', lambda sems: ('name', sems[0])),
     Rule('$Exp', '?$Optionals $VariableName', lambda sems: ('name', sems[1])),
 
     Rule('$BinOp', 'plus', '+', 0.25),
@@ -473,7 +497,8 @@ ptr_rules = [
 
 return_stmt_rules = [
     Rule('$ROOT', '$Return $ReturnElements',
-         lambda sems: merge_dicts({'request': 'declare', 'construct': 'return'}, sems[1]), 0),
+         lambda sems: merge_dicts(
+             {'request': 'declare', 'construct': 'return'}, sems[1]), 0),
     Rule('$ReturnElements', '$ReturnElement $ReturnValue',
          lambda sems: merge_dicts(sems[0], sems[1]), 0.5),
     Rule('$ReturnElements', '$Optionals $ReturnElement $ReturnValue',
@@ -585,7 +610,8 @@ struct_name_rules = [
     Rule('$VarNames', '$VariableName $Joins $VarNames',
          lambda sems: {'parameters': (sems[2]['parameters'], )}, 1.2),
     Rule('$VarNames', '$VariableName $VarNames',
-         lambda sems: {'parameters': (sems[1]['parameters'] + (sems[0], ))}, 0.5),
+         lambda sems:
+         {'parameters': (sems[1]['parameters'] + (sems[0], ))}, 0.5),
     Rule('$VarNames', '$VariableName',
          lambda sems:{'parameters': (sems[0],)}, 0),
 
@@ -601,6 +627,30 @@ struct_name_rules = [
     Rule('$Tag', 'tag', {}, 0.5),
 ]
 
+array_index_rules = [
+    # Rule('$ROOT', '$ArrRef', lambda sems: {'arr_ref': sems[0]}),
+    Rule('$Exp', '$ArrRef', itemgetter(0)),
+    Rule('$ArrRef', '$NameMention $IndexMention',
+         lambda sems: ('[]', sems[0]['name'], sems[1]['index'])),
+    Rule('$ArrRef', '$IndexMention $NameMention',
+         lambda sems: ('[]', sems[0]['index'], sems[1]['name'])),
+    Rule('$IndexMention', '$Elem $Exp',
+         lambda sems: {'index': sems[1]}),
+    Rule('$IndexMention', '?$Elem $At $Exp',
+         lambda sems: {'index': sems[2]}),
+    Rule('$IndexMention', '$Of $Exp',
+         lambda sems: {'index': sems[1]}),
+    Rule('$Index', 'index', {}, 0.25),
+    Rule('$Index', 'position', {}, 0.25),
+    Rule('$At', 'at', {}, 0.25),
+    Rule('$Of', 'of', {}, 0.25),
+    Rule('$Of', 'sub', {}, 0.25),
+    Rule('$Elem', 'element', {}, 0.25),
+    Rule('$Elem', 'value', {}, 0.25),
+    Rule('$NameMention', '?$Elem ?$Of $VariableName',
+         lambda sems: {'name': ('name', sems[2])}),
+]
+
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules\
      + ptr_rules
 rules_2 = func_name_rules + func_param_rules + func_call_rules\
@@ -610,10 +660,9 @@ rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules\
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
           cond_rules + exp_rules + return_stmt_rules + if_rules
 #    + struct_name_rules
-rules_5 = nav_rules + optionals
+rules_5 = nav_rules + optionals + array_index_rules
 
 rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
-
 grammar = Grammar(
     rules=rules,
     annotators=[
@@ -624,6 +673,7 @@ grammar = Grammar(
         PackageTypeAnnotator(),
         PositionalNumberAnnotator(),
         StringNumberAnnotator(),
-        StringTextAnnotator()
+        StringTextAnnotator(),
+        ScopeVariablesAnnotator(),
     ]
 )

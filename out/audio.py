@@ -133,11 +133,22 @@ def main():
         sample_rate_hertz=RATE,
         language_code=language_code,
         speech_contexts=[speech.types.SpeechContext(
-            phrases=[],
-        )])
+            phrases=[
+                # keywords
+                'add', 'declare', 'include', 'stdio', 'function', 'array',
+                'return',
+                # variable names
+                'a', 'b', 'c', 'i', 'j', 'k', 'x', 'y', 'z', 'found',
+                # helplessness
+                'condition i less', 'array a at',
+            ],
+        )],
+        model='command_and_search',
+    )
     streaming_config = types.StreamingRecognitionConfig(
         config=config,
-        single_utterance=True)
+        single_utterance=True,
+    )
 
     print(json.dumps({'status': 'ready'}))
     sys.stdout.flush()
@@ -151,6 +162,7 @@ def main():
 
         # Now, put the transcription responses to use.
         transcript = listen_print_loop(responses)
+        transcript = transcript.replace('=', 'equals')
         action = get_action(transcript, file, line)
         print(action)
         sys.stdout.flush()

@@ -1,4 +1,5 @@
 from word2number import w2n
+from exec import get_scope_variables
 
 
 class Annotator:
@@ -41,16 +42,25 @@ class DataTypeAnnotator(Annotator):
 class VariableNameAnnotator(Annotator):
     def annotate(self, tokens):
         if len(tokens) > 0 and tokens[0] == 'pointer':
-            return [('$VariableName', '*' + '_'.join(tokens[1:]))]
+            return [('$VarName', '*' + '_'.join(tokens[1:]))]
         if len(tokens) > 0 and tokens[0] == 'address':
             if len(tokens) > 1 and tokens[1] == 'of':
                 res_words = ['variable', 'function', 'array', 'int', 'integer',
                              'double', 'float', 'char', 'character']
-                if len(tokens) > 2 and  tokens[2] in res_words:
-                    return [('$VariableName', '&' + '_'.join(tokens[3:]))]
-            return [('$VariableName', '&' + '_'.join(tokens[2:]))]
+                if len(tokens) > 2 and tokens[2] in res_words:
+                    return [('$VarName', '&' + '_'.join(tokens[3:]))]
+            return [('$VarName', '&' + '_'.join(tokens[2:]))]
+        return [('$VarName', '_'.join(tokens))]
 
-        return [('$VariableName', '_'.join(tokens))]
+
+class ScopeVariablesAnnotator(Annotator):
+    def annotate(self, tokens):
+        if len(tokens) > 0:
+            scope_variables = get_scope_variables()
+            if '_'.join(tokens) in scope_variables:
+                return [('$ScopeVariable', '_'.join(tokens))]
+        return []
+
 
 class StringTextAnnotator(Annotator):
     def annotate(self, tokens):
@@ -68,6 +78,7 @@ class StringTextAnnotator(Annotator):
                     pass
         return [('$StringText', ' '.join(tokens))]
 
+
 class NumberAnnotator(Annotator):
     def annotate(self, tokens):
         if len(tokens) == 1:
@@ -78,6 +89,13 @@ class NumberAnnotator(Annotator):
                 return [('$Number', value)]
             except ValueError:
                 pass
+        types = [int, float]
+        try:
+            val = w2n.word_to_num(' '.join(tokens))
+            if (type(val) in types):
+                return [('$Number', val)]
+        except ValueError:
+            pass
         return []
 
 

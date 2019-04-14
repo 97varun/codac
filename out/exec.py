@@ -1,4 +1,4 @@
-from pycparser import parse_file, c_generator
+from pycparser import parse_file, c_generator, c_parser
 from pycparser.c_ast import *
 from operator import attrgetter
 from copy import deepcopy
@@ -11,22 +11,12 @@ def expression(sem):
         return ID(sem[1])
     elif sem[0] == 'value':
         return Constant('int', str(sem[1]))
+    elif sem[0] == '[]':
+        return ArrayRef(expression(sem[1]), expression(sem[2]))
     elif len(sem) == 2:
         return UnaryOp(sem[0], expression(sem[1]))
     elif len(sem) == 3:
         return BinaryOp(sem[0], expression(sem[1]), expression(sem[2]))
-
-
-def add_condition_tpl(sem):
-    if sem[0] == 'name':
-        return ID(sem[1])
-    elif sem[0] == 'value':
-        return Constant('int', str(sem[1]))
-    return BinaryOp(
-        sem[0],
-        add_condition_tpl(sem[1]),
-        add_condition_tpl(sem[2])
-    )
 
 
 def array_decl(name, type, size):
@@ -43,13 +33,15 @@ def loop_decl(type):
     if type == 'for':
         return For(None, None, None, Compound([]))
     elif type == 'while':
-        return While(None, Compound([]))
+        return While(Constant('boolean', 'true'), Compound([]))
 
 
-def var_decl(name, type):
+def var_decl(name, type, value=None):
     return Decl(
         name, [], [], [],
-        TypeDecl(name, [], IdentifierType([type])), None, None
+        TypeDecl(name, [], IdentifierType([type])),
+        value if value is None else expression(value),
+        None
     )
 
 
@@ -58,11 +50,11 @@ def ptr_decl(name, type):
 
 spec = {
     # variable
-    'declare_variable_req': ['name', 'type'],
+    'declare_variable_req': {'name': None, 'type': None, 'value': 'opt'},
     'declare_variable_tpl': var_decl,
 
     # array
-    'declare_array_req': ['name', 'type', 'size'],
+    'declare_array_req': {'name': None, 'type': None, 'size': None},
     'declare_array_tpl': lambda name, type, size: Decl(
         name, [], [], [],
         array_decl(name, type, size),
@@ -70,50 +62,50 @@ spec = {
     ),
 
     # assignment
-    'declare_assignment_req': ['lhs', 'rhs'],
+    'declare_assignment_req': {'lhs': None, 'rhs': None},
     'declare_assignment_tpl': lambda lhs, rhs: Assignment(
         '=',
-        ID(lhs[1]),
+        expression(lhs),
         expression(rhs)
     ),
 
     # include
-    'include_package_req': ['name', 'type'],
+    'include_package_req': {'name': None, 'type': 'lib'},
     'include_package_tpl': lambda name, type:
-    '#include"{0}"'.format(name) if type == 'own'
-    else '#include<{0}>'.format(name),
+    '#include"{0}.h"'.format(name) if type == 'own'
+    else '#include<{0}.h>'.format(name),
 
     # if
-    'declare_if_req': [],
+    'declare_if_req': {},
     'declare_if_tpl': lambda: If(Constant('boolean', 'true'),
                                  Compound([]), None),
 
-    'declare_if-else_req': [],
+    'declare_if-else_req': {},
     'declare_if-else_tpl': lambda: If(Constant('boolean', 'true'),
                                       Compound([]), Compound([])),
 
-    'add_condition_req': ['cond'],
-    'add_condition_tpl': add_condition_tpl,
+    'add_condition_req': {'cond': None},
+    'add_condition_tpl': expression,
 
-    'add_else_req': [],
+    'add_else_req': {},
     'add_else_tpl': lambda: Compound([]),
 
-    'add_else_if_req': [],
+    'add_else_if_req': {},
     'add_else_if_tpl': lambda: If(Constant('boolean', 'true'),
                                   Compound([]), None),
 
     # loops
-    'declare_loop_req': ['type'],
+    'declare_loop_req': {'type': None},
     'declare_loop_tpl': loop_decl,
 
-    'add_init_req': ['name', 'type'],
+    'add_init_req': {'name': None, 'type': None, 'value': 'opt'},
     'add_init_tpl': var_decl,
 
-    'add_update_req': ['updates'],
+    'add_update_req': {'updates': None},
     'add_update_tpl': lambda updates: expression(updates),
 
     # function
-    'declare_function_req': ['name', 'type'],
+    'declare_function_req': {'name': None, 'type': 'void'},
     'declare_function_tpl': lambda name, type: FuncDef(
         Decl(name, [], [], [], FuncDecl(
                                     ParamList([]),
@@ -123,14 +115,17 @@ spec = {
         Compound([]),
     ),
 
-    'declare_func_call_req': ['name', 'parameters'],
+    'declare_func_call_req': {'name': None, 'parameters': 'opt'},
     'declare_func_call_tpl': lambda name, parameters: FuncCall(
         ID(name),
         ExprList(list(map(expression, parameters)))
     ),
 
-    'declare_return_req': ['value'],
+    'declare_return_req': {'value': None},
     'declare_return_tpl': lambda value: Return(expression(value)),
+
+    'add_parameter_req': {'name': None, 'type': None},
+    'add_parameter_tpl': var_decl,
 }
 
 
@@ -165,43 +160,43 @@ def add_condition(stmt, pos, cond):
     '''add condition to if, for and while'''
     if hasattr(stmt, 'cond'):
         stmt.cond = cond
-        return True
-    return False
+        return None, True
+    return False, None
 
 
 def add_parameter(stmt, pos, param):
     '''add parameter to function declaration'''
     if not hasattr(stmt, 'decl'):
-        return False
+        return None, False
     if stmt.decl.type.args is None:
         stmt.decl.type.args = ParamList([param])
     else:
         stmt.decl.type.args.params.append(param)
-    return True
+    return None, True
 
 
 def add_init(stmt, pos, init):
     '''add initialization to for'''
     if not hasattr(stmt, 'init'):
-        return False
+        return None, False
     if stmt.init is None:
         stmt.init = DeclList([init])
     else:
         stmt.init.decls.append(init)
-    return True
+    return None, True
 
 
 def add_update(stmt, pos, upd):
     '''add update statement to for'''
     if not hasattr(stmt, 'next'):
-        return False
+        return None, False
     if stmt.next is None:
         stmt.next = ExprList([upd])
     elif isinstance(stmt.next, UnaryOp) or isinstance(stmt.next, BinaryOp):
         stmt.next = ExprList([stmt.next, upd])
     else:
         stmt.next.exprs.append(upd)
-    return True
+    return None, True
 
 
 def add_else(stmt, pos, els):
@@ -343,53 +338,90 @@ def req_checker(name, sem):
     req = spec[name + '_req']
     tpl = spec[name + '_tpl']
     args = []
-    for elem in req:
+    for elem in req.keys():
         if elem not in sem:
-            raise Exception('{0} missing'.format(elem))
+            if req[elem] is None:
+                raise Exception('{0} missing {1}'.format(elem, sem))
+            elif req[elem] is 'opt':
+                continue
+            else:
+                args.append(req[elem])
         args.append(sem[elem])
     return tpl(*args)
 
 
-def handle_req(ext, sem, line):
+def handle_req(ext, fmt, sem, line):
+    line -= len(fmt['includes'])
     req_type = '{0}_{1}'.format(sem['request'], sem['construct'])
     node = req_checker(req_type, sem)
-    coord = Coord(0, 0)
+    coord = Coord('file', line, 0)
+
     if req_type == 'declare_function':
-        if len(ext) > 0:
-            coord = Coord(last_line(ext[-1].coord) + 3, 0)
-        ext.append(node)
+        coord.line = 3
+        ext.insert(0, node)
+    elif req_type == 'include_package':
+        fmt['includes'].append(node)
     else:
         coord, found = find_node(ext, line, {'method': req_type, 'arg': node})
+    if coord is None:
+        coord = Coord('file', line, 0)
+    coord.line += len(fmt['includes'])
     return coord, node
 
 
-def generate_code(sems, file, line):
-    ast = parse_file(file, use_cpp=True)
+def preprocess(filename):
+    '''extracts formatting and includes from file'''
+    fmt = {'includes': []}
+    src = ''
+    with open(filename) as file:
+        for line in file:
+            if line.startswith('#'):
+                fmt['includes'].append(line)
+            else:
+                src += line
+        src.lstrip('\n')
+    return src, fmt
+
+
+def postprocess(fmt, replace):
+    '''adds formatting and includes to replace'''
+    replace = ''.join(fmt['includes']) + '\n' + replace
+    return replace
+
+
+def generate_code(sems, filename, line):
     generator = c_generator.CGenerator()
+    parser = c_parser.CParser()
+
+    src, fmt = preprocess(filename)
+    ast = parser.parse(src)
 
     codes = []
     for sem in sems:
         if 'request' not in sem or 'construct' not in sem or\
-           sem['request'] not in ['declare', 'add']:
+           sem['request'] not in ['declare', 'add', 'include']:
             continue
         new_ext = deepcopy(ast.ext)
-        coord, node = handle_req(new_ext, sem, line)
-        op = generator.visit(node)
+        new_fmt = deepcopy(fmt)
+        coord, node = handle_req(new_ext, new_fmt, sem, line)
+        op = node
+        if not isinstance(op, str):
+            op = generator.visit(node)
         rp = generator.visit(FileAST(new_ext))
-        codes.append({'output': op, 'replace': rp, 'cursor': coord.line})
+        rp = postprocess(new_fmt, rp)
+        codes.append({'output': op, 'replace': rp,
+                     'cursor': coord.line})
     return codes
 
+
+def get_scope_variables():
+    return ['a', 'b', 'c', 'x', 'y', 'z', 'i', 'j', 'k', 'found', 'element']
+
 if __name__ == '__main__':
-    # codes = generate_code(
-    #     [{'request': 'declare', 'construct': 'variable',
-    #       'name': 'x', 'type': 'int'}],
-    #     'hello.c',
-    #     3
-    # )
     codes = generate_code(
-        [{'request': 'declare', 'construct': 'loop',
-          'type': 'for'}],
+        [{'request': 'add', 'construct': 'init',
+          'name': 'x', 'type': 'int', 'value': ('value', 0)}],
         'hello.c',
-        2
+        3
     )
     print(codes)
