@@ -4,6 +4,7 @@ from operator import attrgetter
 from copy import deepcopy
 from pycparser.plyparser import Coord
 import os
+import re
 
 
 def expression(sem):
@@ -385,6 +386,7 @@ def preprocess(filename):
 
 def postprocess(fmt, replace):
     '''adds formatting and includes to replace'''
+    replace = re.sub('\n+', '\n', replace)
     replace = ''.join(fmt['includes']) + '\n' + replace
     return replace
 
