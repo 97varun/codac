@@ -84,6 +84,7 @@ func_param_ips = [
     'add a parameter of integer type called x in the fifth position',
     'add a parameter in the second position of integer type called x',
 ]
+
 '''
 func_param_ips = [
     'which accepts parameter x of type double',
@@ -115,6 +116,7 @@ func_call_ips = [
     'invoke function max having parameters 2 and 10 and 5',
     'call the function func1 and pass it arguments 2 3 and 4',
 ]
+
 f_c_printf_ips = [
     'call printf with string Hello World',
     'call function printf with string type argument Hey',
@@ -226,6 +228,7 @@ loop_update_ips = [
     'add loop steps ++a --b and c--',
     'add updates x++ ++z and y--',
 ]
+
 '''
 loop_ips = [
     'create a for loop with loop variable i',
@@ -258,11 +261,12 @@ nav_ips = [
     # 'go to the inner if statement',
     # 'goto function func',
 ]
+
 edit_ips = [
-    'delete function max',          #Remove type commands
+    'delete function max',          # Remove type commands
     'delete variable x',
     ''
-    'change lhs to rhs',          #Update type commands
+    'change lhs to rhs',          # Update type commands
 ]
 
 additional_ips = [
@@ -273,7 +277,6 @@ additional_ips = [
     'stop dictation',
 
 ]
-
 
 pack_ips = [
     'include the package stdio',
@@ -312,6 +315,7 @@ ptr_init_ips = [
     'initialize pointer x to pointer y',
     'set pointer x to address of array y',
 ]
+
 ptr_ips_1 = [
     'declare a pointer to an integer variable called p',
     'declare a pointer p of type integer',
@@ -361,6 +365,8 @@ struct_ips = [
 ]
 
 var_ips = [
+    'declare variable x of type integer set to 0',
+    'declare a variable of type integer called x set to zero',
     'declare integer variable x',
     'declare variable x type integer',
     'declare integer variable called x',
@@ -381,8 +387,6 @@ var_ips = [
     'declare a variable count with type of integer',
     'declare a long integer program count'
 ]
-#           -----> WITH PARAMETERS
-'''
 
 if_ips = [
     'declare an if statement',
@@ -399,4 +403,17 @@ if_ips = [
     'add a condition x less than 10',
     'add else'
 ]
-'''
+
+array_index_ips = [
+    'x of i',
+    'x sub i',
+    'element at i of a',
+    'element at index i of a',
+    'element of y at index i',
+    'element of a at i',
+    'element of a at position i',
+    'element j of array a',
+    'value of array y at index i',
+    'set value of array a at index j equal to value of\
+         array a at index j plus 1'
+]
