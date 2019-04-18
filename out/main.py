@@ -25,7 +25,7 @@ def get_action(transcript, file, line):
     if parses:
         score_parses(parses)
     else:
-        return json.dumps({'input': transcript, 'error': 'could not parse'})
+        return json.dumps({'input': transcript, 'error': 'Could not generate parse of the input'})
     parses.sort(key=lambda x: (len(x.semantics), x.semantics['score']),
                 reverse=True)
 
@@ -40,7 +40,7 @@ def get_action(transcript, file, line):
             uniq_sems.append(parse.semantics)
     # print(*uniq_sems[:5], sep='\n', end='\n\n\n')
 
-    codes = generate_code(uniq_sems[:1], file, line)
+    codes = generate_code(uniq_sems[:5], file, line)
     codes.insert(0, {'input': transcript})
     return json.dumps(codes)
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         func_call_ips, f_c_printf_ips, f_c_scanf_ips, init_ips,  # [5 - 8]
         loop_ips, loop_init_ips, loop_cond_ips, loop_update_ips,  # [9 - 12]
         nav_ips, pack_ips, ptr_ips, ptr_init_ips, ptr_ips_1,  # [13 - 17]
-        return_stmt_ips, var_ips, array_index_ips  # [18 - 20]
+        return_stmt_ips, var_ips,   # [18 - 20]
     ]
 
     ips_not_implemented = [struct_ips, additional_ips]

@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {}
 
-class Codac {
+class Codac {	
 	private statusBarItem: vscode.StatusBarItem;
 	private suggestTree: SampleTree; 
 	private dictateTree: SampleTree;
@@ -62,7 +62,7 @@ class Codac {
 
 	public async navigate(sem: any) {
 		let self = this;
-		let cur_cursor = self.editor.getCursorPosition(); //cur_cursor = line,character
+		// let cur_cursor = self.editor.getCursorPosition(); //cur_cursor = line,character
 		try {
 			//move across line[s]
 			if (sem.hasOwnProperty('construct') && sem.construct === 'line') {
@@ -116,10 +116,38 @@ class Codac {
 				});
 			}
 		} catch (error) {
-			console.log(error);
-		}
+			let obj2 = {'input': 'NavError', 'Output':'Navigation Error'};
+			this.handleError(Object.assign({}, error, obj2));
+			}
 	}
 
+	// append to errors tree
+	public insertError(message: string) {
+		let tree = this.errorTree;
+		let idx = tree.getLength() + 1;
+		let msg = message.split('\n');
+		let treeData = [new SampleNode(idx +'. '+ msg[0], [])];
+		for (let index = 2; index <= msg.length; index++) {
+			idx += 1;
+			treeData.push(new SampleNode(idx +'. ' + msg[index], []));	
+		}			
+        tree.updateTree(treeData);
+    }
+	
+	public async handleError(sem: any) {
+		let s_tree = this.suggestTree;
+		if (sem.hasOwnProperty('input')) {
+			let treeData = [new SampleNode('-> ' + sem.input, [])];
+			if (sem.hasOwnProperty('output')) {
+				treeData.push(new SampleNode('    1. ' + sem.output.toString(), []));
+			}
+			s_tree.setTree(treeData);
+		}
+		if (sem.hasOwnProperty('error')) {
+			this.insertError(sem.error);
+		}
+    }
+	
 	public async handleOutput(tree: SampleTree, data: any) {
 		let self = this;
 		console.log("HandleOp func:");
@@ -128,29 +156,35 @@ class Codac {
 		if (JSONdata.hasOwnProperty('status') && JSONdata.status === 'ready') {
 			vscode.window.showInformationMessage(`${JSONdata.status}`);
 		} else if (JSONdata.hasOwnProperty('error')) {
-			let treeData = [new SampleNode(JSONdata.error, [])];
-			tree.setTree(treeData);
-			// self.insertError(JSONdata.error);
+			this.handleError(JSONdata);
 		} else if (JSONdata.hasOwnProperty('audio_type') && JSONdata.audio_type === 'dictation') {
 			let treeData = [new SampleNode(`${JSONdata.output}`, [])];
 			tree.updateTree(treeData);
 		} else{
-			if (JSONdata[1].hasOwnProperty('request')) {
-				if (JSONdata[1]['request'] === 'navigate'){
-					self.navigate(JSONdata[1]);
-					return;
-				}
-				// else if (JSONdata[0]['type'] === 'error') {
-				// 	self.insertError(JSONdata[0].error);					
-				// }
+			let treeData = [new SampleNode('-> ' + JSONdata[0].input, [])];
+			if (JSONdata[1].hasOwnProperty('error')) {
+				this.handleError(Object.assign({}, JSONdata[0], JSONdata[1]));
+				return;
 			}
-			let treeData = [new SampleNode(JSONdata[0].input, [])];
-			for (let i = 1; i < JSONdata.length; ++i) {
-				treeData.push(new SampleNode(`${i}. ${JSONdata[i].output}`, []));
+			else if (JSONdata[1].hasOwnProperty('request') && JSONdata[1]['request'] === 'navigate'){
+				self.navigate(JSONdata[1]);
+			}
+			else{
+				for (let i = 1; i < JSONdata.length; ++i) {
+					treeData.push(new SampleNode(`    ${i}. ${JSONdata[i].output}`, []));
+				}
+				await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);	
 			}
 			tree.setTree(treeData);
-			await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);
 		}
+	}
+
+	public print_dictation_op(){
+		let childrenLabel = this.dictateTree.getChildren(undefined).map((child) => {
+			return child.label;
+		});
+		let stringToInsert = childrenLabel.slice(1).join(' ');
+		this.editor.insertText(stringToInsert);
 	}
 
 	public async replaceCode(statement: string, cursor: number) {
@@ -198,16 +232,16 @@ class Codac {
 			try {
 				self.handleOutput(tree, data);
 			} catch(e) {
-				console.log(e);
 				console.log('Could not handle output.');
-				// self.insertError('Could not handle output.');
+				console.log(e);
+				self.insertError('Recognizer could not handle output. Data : ' + data);
 			}
 		});
 	
 		self.recognizer.on('close', function(code: number, signal: string) {
-			console.log('program stopped', signal);
+			console.log('Program stopped. Signal : ', signal);
 			if (signal === null) {
-				console.log('respawning');
+				console.log('Respawning');
 				self.setStatusBarBtn('✖️️ Stop', 'extension.stop');
 				self.startRecognizer('audio');
 			} else {
@@ -219,7 +253,7 @@ class Codac {
 			console.log(`ERROR: ${data}`);
 			console.log(data);
 			// console.log(data.toString());
-			// self.insertError('Recognizer stderr :' + data.toString());
+			self.insertError('On Recognizer stderr :' + data.toString());
 		});
 
 	}
@@ -238,6 +272,7 @@ class Codac {
 			}
 			this.startRecognizer('dictate_audio');
 		} else {
+			this.print_dictation_op();
 			this.stopRecognizer();			
 		}
 	}
@@ -270,21 +305,24 @@ class SampleTree implements vscode.TreeDataProvider<vscode.TreeItem> {
 			label: element.label
 		};
 	}
-	public getChildren(element: SampleNode): SampleNode[] {
+	public getChildren(element?: SampleNode): SampleNode[] {
 		return element ? element.getChildren() : this.tree;
 	}
 
 	public setTree(tree: SampleNode[]) {
-		console.log(tree);
 		this.tree = tree;
-		this._onDidChangeTreeData.fire();
+		this._onDidChangeTreeData.fire();		
+		// console.log(tree);
 	}
 
 	public updateTree(tree: SampleNode[]) {
-		console.log('The tree after update is : ');
-		console.log(tree);
-        this.tree.push(...tree);
+		this.tree.push(...tree);
 		this._onDidChangeTreeData.fire();
+		// console.log(tree);
+	}
+
+	public getLength(): number {
+		return this.tree.length;
 	}
 }
 
@@ -300,6 +338,7 @@ class Editor {
 			if (editor.selection.isEmpty) {
 				pos = editor.selection.active;
 			}
+			console.log("InsertText Func : ");
 			console.log(pos.line, pos.character, text);
 			editor.edit(
 				editBuilder => {

@@ -341,8 +341,11 @@ def req_checker(name, sem):
     args = []
     for elem in req.keys():
         if elem not in sem:
+            # error: missing field
             if req[elem] is None:
-                raise Exception('{0} missing {1}'.format(elem, sem))
+                msg = '{0} missing'.format(elem)
+                err = {'output': 'Error : ' + msg + '\n' + str(sem), 'error': 'Could not generate output.\nMissing Field : ' + elem}
+                return err
             elif req[elem] is 'opt':
                 continue
             else:
@@ -356,7 +359,9 @@ def handle_req(ext, fmt, sem, line):
     req_type = '{0}_{1}'.format(sem['request'], sem['construct'])
     node = req_checker(req_type, sem)
     coord = Coord('file', line, 0)
-
+    # error: missing field
+    if isinstance(node, dict):
+        return coord, node
     if req_type == 'declare_function':
         coord.line = 3
         ext.insert(0, node)
@@ -364,6 +369,10 @@ def handle_req(ext, fmt, sem, line):
         fmt['includes'].append(node)
     else:
         coord, found = find_node(ext, line, {'method': req_type, 'arg': node})
+    # error: could not find node to insert at
+    if found is False:
+        err = {'output': 'ASTInsertErr' + '\n' + str(sem), 'Error': 'Could not insert into the A. S. T.'}
+        return coord, err
     if coord is None:
         coord = Coord('file', line, 0)
     coord.line += len(fmt['includes'])
@@ -400,23 +409,33 @@ def generate_code(sems, filename, line):
 
     codes = []
     for sem in sems:
+        # error : if the first result has error, then exit
+        if len(codes) == 1 and isinstance(codes[0], dict):
+            if 'error' in codes[0]:
+                break
         if 'request' not in sem or 'construct' not in sem or\
            sem['request'] not in ['declare', 'add', 'include']:
             if 'request' in sem and sem['request'] in ['navigate']:
                 codes.append(sem)
-                break
             else:
-                continue
+                codes.append({'output': 'UnknownReqError' + '\n' + str(sem), 'error': 'Could not understand request.\n' + 'Sem : ' + str(sem)})
+            continue
         new_ext = deepcopy(ast.ext)
         new_fmt = deepcopy(fmt)
         coord, node = handle_req(new_ext, new_fmt, sem, line)
+        if isinstance(node, dict):
+            codes.append(node)
+            continue
         op = node
+        # op is string for include_package
         if not isinstance(op, str):
             op = generator.visit(node)
+        # if the request threw error
         rp = generator.visit(FileAST(new_ext))
         rp = postprocess(new_fmt, rp)
         codes.append({'output': op, 'replace': rp,
                      'cursor': coord.line})
+
     return codes
 
 
