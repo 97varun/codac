@@ -4,7 +4,6 @@ from operator import itemgetter
 
 
 def merge_dicts(*dicts):
-    # print(dicts)
     result = dict()
     for dct in dicts:
         if not dct:
@@ -28,21 +27,25 @@ decl_rules = [
          '$DeclarationElement $DeclarationElement $DeclarationElement\
           $DeclarationElement',
          lambda sems: merge_dicts(sems[0], sems[1], sems[2], sems[3])),
-    Rule('$DeclarationElement', '$InitElement', itemgetter(0)),
 ]
 
 dec_constructs = [
     Rule('$DeclarationElement', '$DataTypeMention', itemgetter(0)),
     Rule('$DeclarationElement', '$VariableNameMention', itemgetter(0)),
-    Rule('$DeclarationElement', '$Optionals $VariableNameMention',
+    Rule('$DeclarationElement', '$InitElement', itemgetter(0)),
+    Rule('$DeclarationElement', '$PreVariable', itemgetter(0)),
+    Rule('$DataTypeMention', '$Optionals $DataTypeMention',
          itemgetter(1), 0.25),
+    Rule('$VariableNameMention', '$Optionals $VariableNameMention',
+         itemgetter(1), 0.25),
+    Rule('$InitElement', '$Optionals $InitElement', itemgetter(1), 0.25),
+    Rule('$PreVariable', '$Optionals $PreVariable', itemgetter(1), 0.25),
 ]
 
 pack_rules = [
     Rule('$ROOT', '$Include $Inclusion',
          lambda sems: merge_dicts({'request': 'include'}, sems[1])),
     Rule('$Include', 'include', {}, 1.0),
-    # Rule('$Include', '$Add', {}, 1.0),
     Rule('$Inclusion', '?$Optionals ?$PrePackName $PackName',
          lambda sems: merge_dicts(sems[2], sems[1]), 0),
     # Can replace $PackageName with $variableName
@@ -50,9 +53,9 @@ pack_rules = [
          lambda sems: merge_dicts(
              {'name': sems[2]}, {'type': 'lib', 'construct': 'package'}), 2.5),
     Rule('$PackName', '?$Optionals $Called $VariableName',
-         lambda sems: merge_dicts({'name': sems[2]}, {'type': 'own'}), 1.0),
+         lambda sems: merge_dicts(sems[2], {'type': 'own'}), 1.0),
     Rule('$PackName', '$VariableName',
-         lambda sems: merge_dicts({'name': sems[0]}, {'type': 'own'}), 0.5),
+         lambda sems: merge_dicts(sems[0], {'type': 'own'}), 0.5),
     Rule('$PrePackName', 'library', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'package', {'construct': 'package'}, 1.0),
     Rule('$PrePackName', 'header', {'construct': 'package'}, 1.0),
@@ -71,19 +74,18 @@ init_rules = [
     Rule('$Initialize', 'make'),
     Rule('$Initialize', 'change'),
     Rule('$Initialize', 'update'),
-    Rule('$Initialization', '$Lhs ?$Equal ?$To $Rhs',
+    Rule('$Initialization', '$Lhs ?$Equal ?$To ?$Rhs',
          lambda sems: merge_dicts(sems[0], sems[-1])),
     Rule('$Equal', 'equal', itemgetter(0), 0.25),
     Rule('$Equal', 'equals', itemgetter(0), 0.25),
-    Rule('$To', 'to', itemgetter(0), 0.25),
+    Rule('$To', 'to', itemgetter(0), 0.5),
 
     Rule('$Lhs', '$Hs', lambda sems: {'lhs': sems[0]}),
     Rule('$Rhs', '$Exp', lambda sems: {'rhs': sems[0]}),
 
     Rule('$Hs', '$Optionals $Hs', itemgetter(1), 0.25),
     Rule('$Hs', '$Hs $Optionals', itemgetter(0), 0.25),
-    Rule('$Hs', '$Variable $VariableName', lambda sems: ('name', sems[1])),
-    Rule('$Hs', '$VariableName', lambda sems: ('name', sems[0])),
+    Rule('$Hs', '$VariableName', lambda sems: ('name', sems[0]['name'])),
     Rule('$Hs', '$ArrRef', itemgetter(0), 0.25),
 
     Rule('$ROOT', '$Assign $Assignment',
@@ -95,47 +97,69 @@ init_rules = [
 ]
 
 data_type_rules = [
-    Rule('$DeclarationElement', '$Optionals $DataTypeMention',
-         itemgetter(1), 1.0),
     Rule('$DataTypeMention', '$Type ?$Optionals $DataType',
          lambda sems: {'type': sems[2]}, 1.0),
     Rule('$DataTypeMention', '$DataType $Type',
          lambda sems: {'type': sems[0]}, 1.0),
-    Rule('$DataTypeMention', '$DataType', lambda sems: {'type': sems[0]}, 0.0),
+    Rule('$DataTypeMention', '$DataType', lambda sems: {'type': sems[0]}),
     Rule('$Type', 'type'),
+    Rule('$DataTypeMention', '$To $DataTypeMention', itemgetter(1)),
+
+    # pointer types
+    Rule('$DataTypeMention', '$Pointer $To $DataTypeMention',
+         lambda sems: {'type': sems[2]['type'], 'modifier': 'pointer'}),
+    Rule('$DataTypeMention', '$DataTypeMention $Pointer',
+         lambda sems: {'type': sems[0]['type'], 'modifier': 'pointer'}),
+    Rule('$Pointer', 'pointer', {}, 0.5),
+    Rule('$Pointer', 'pointing', {}, 0.5),
+    Rule('$Pointer', 'points', {}, 0.5),
+
+    # data types
+    Rule('$DataType', '$Integer', 'int'),
+    Rule('$DataType', '$Short', 'short'),
+    Rule('$DataType', '$Short $Integer', 'short int', 0.25),
+    Rule('$DataType', 'long', 'long'),
+    Rule('$DataType', '$Long $Integer', 'long int', 0.25),
+    Rule('$DataType', 'long double', 'int'),
+    Rule('$DataType', 'long long', 'int'),
+    Rule('$DataType', '$Long $Long $Integer', 'int', 0.5),
+    Rule('$DataType', 'char', 'char'),
+    Rule('$DataType', 'character', 'char'),
+    Rule('$DataType', 'double', 'double'),
+    Rule('$DataType', 'float', 'float'),
+    Rule('$Integer', 'int', {}),
+    Rule('$Integer', 'integer', {}),
+    Rule('$Short', 'short', {}),
+    Rule('$Long', 'long', {})
 ]
 
 var_name_rules = [
     Rule('$VariableNameMention', '$VariableName',
-         lambda sems: {'name': sems[0]}, -0.25),
-    Rule('$VariableNameMention', 'variable', {'construct': 'variable'}, 0.5),
-    Rule('$VariableNameMention', '$PreVariable $VariableName',
-         lambda sems: merge_dicts({'name': sems[1]}, sems[0]), 1.0),
-    Rule('$VariableNameMention', '$PreVariable $PreVariable $VariableName',
-         lambda sems: merge_dicts({'name': sems[2]}, sems[0], sems[1]), 1.7),
-    Rule('$PreVariable', '$Variable', itemgetter(0), 0.0),
-    Rule('$Variable', 'variable', {'construct': 'variable'}, 1.0),
-    Rule('$PreVariable', '$Called', {}, 1.0),
-    Rule('$PreVariable', 'name', {}, 1.0),
+         itemgetter(0), 0.0),
+    Rule('$VariableName', '$DataTypeMention $VarName',
+         lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.25),
     Rule('$VariableName', '$PreVariable $VarName',
-         itemgetter(1)),
-    Rule('$VariableName', '$ScopeVariable', itemgetter(0)),
-    Rule('$PreVariable', 'function', {'construct': 'function'}),
-    Rule('$PreVariable', 'array', {'construct': 'array'}),
-    Rule('$PreVariable', 'package', {'constrct': 'package'}),
-    Rule('$PreVariable', 'index'),
-    Rule('$PreVariable', '$DataType', lambda sems: {'type': sems[0]}),
+         lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.25),
+    Rule('$VariableName', '$PreVariable $PreVariable $VarName',
+         lambda sems: merge_dicts(sems[0], sems[1], {'name': sems[2]}), 1.0),
+    Rule('$PreVariable', 'variable', {'construct': 'variable'}, 0.5),
+    Rule('$PreVariable', 'function', {'construct': 'function'}, 0.5),
+    Rule('$PreVariable', 'array', {'construct': 'array'}, 0.5),
+    Rule('$PreVariable', 'package', {'construct': 'package'}, 0.5),
+    Rule('$PreVariable', 'index', {}, 0.5),
+    Rule('$PreVariable', 'pointer', {'modifier': 'pointer'}, 0.5),
+    Rule('$PreVariable', 'called', {}, 0.5),
+    Rule('$PreVariable', 'name', {}, 0.5),
+    Rule('$PreVariable', '$PrePackName', {'construct': 'package'}, 0.5),
+    Rule('$Variable', 'variable', {}),
+
+    # Rule('$PreVariable', '$DataTypeMention', itemgetter(0)),
+    Rule('$VariableName', '$ScopeVariable', lambda sems: {'name': sems[0]}),
 ]
 
 arr_name_rules = [
-    Rule('$VariableNameMention', 'array', {'construct': 'array'}, 0.5),
-    Rule('$PreVariable', 'array', {'construct': 'array'}, 1.0),
-
-
-    # Rule('VariableName', '$VariableName $ArrayIndex $VariableName',)  #a of i
-    # Rule('ArrayIndex', '$Of',)                      #a of i
-    # Rule('ArrayIndex', '$Sub'),                     #a sub i
-    # Rule('ArrayIndex', '?$Optional $Index'),        #at index i
+    # Rule('$VariableNameMention', 'array', {'construct': 'array'}, 0.5),
+    # Rule('$PreVariable', 'array', {'construct': 'array'}, 1.0),
 ]
 
 arr_size_rules = [
@@ -159,16 +183,16 @@ func_name_rules = [
     Rule('$ROOT', '$Declare $FnDeclaration',
          lambda sems: merge_dicts({'request': 'declare'}, sems[1]), 1.0),
     Rule('$FnDeclaration', '$Function ?$PreFnName $VariableName',
-         lambda sems:  merge_dicts({'name': sems[2]}, sems[0])),
+         lambda sems:  merge_dicts(sems[2], sems[0])),
     Rule('$FnDeclaration',
          '$FnDataTypeElement $Function ?$PreFnName $VariableName',
-         lambda sems: merge_dicts({'name': sems[3]}, sems[0], sems[1]), 1.0),
+         lambda sems: merge_dicts(sems[3], sems[0], sems[1]), 1.0),
     Rule('$FnDeclaration',
          '$Function $FnDataTypeElement ?$PreFnName $VariableName',
-         lambda sems: merge_dicts({'name': sems[3]}, sems[0], sems[1]), 1.0),
+         lambda sems: merge_dicts(sems[3], sems[0], sems[1]), 1.0),
     Rule('$FnDeclaration',
          '$Function ?$PreFnName $VariableName $FnDataTypeElement',
-         lambda sems: merge_dicts({'name': sems[2]}, sems[0], sems[3]), 1.0),
+         lambda sems: merge_dicts(sems[2], sems[0], sems[3]), 1.0),
 
     Rule('$PreFnName', '?with ?function name', {}, 1.0),
     Rule('$PreFnName', '$Called', {}, 1.0),
@@ -213,15 +237,15 @@ func_param_rules = [
          lambda sems: merge_dicts(sems[0], sems[1], sems[2], sems[3]), 0.0),
 
     Rule('$FuncParamElement', '$Parameter', {'construct': 'parameter'}, 0.0),
-    Rule('$FuncParamElement', '$PreName',
-         lambda sems: {'name': sems[0]}, 0.0),
+    Rule('$FuncParamElement', '$VariableNameMention',
+         lambda sems: {'name': sems[0]['name']}, 0.0),
     Rule('$FuncParamElement', '$FnDataTypeElement1', itemgetter(0), 0.0),
 
 
     Rule('$ParamPosElement', '$At $Position $Number',
-         lambda sems: {'position': str(sems[2])}, 1.0),
+         lambda sems: {'position': sems[2]}, 1.0),
     Rule('$ParamPosElement', '$At ?$Determiner $PosNum $Position',
-         lambda sems: {'position': str(sems[2])}, 1.0),
+         lambda sems: {'position': sems[2]}, 1.0),
 
     Rule('$Add', 'add', {}, 0.0),
     Rule('$At', 'at', {}, 1.0),
@@ -240,23 +264,23 @@ func_call_rules = [
     Rule('$ROOT', '$FuncCall',
          lambda sems: merge_dicts(sems[0], {'request': 'declare'}), 0.0),
     Rule('$FuncCall', '$Call ?$Optional $Function $PreName',
-         lambda sems: {'construct': 'func_call', 'name': sems[3]}, 0.0),
+         lambda sems:
+         {'construct': 'func_call', 'name': sems[3]['name']}, 0.0),
     Rule('$FuncCall',
          '$Call ?$Optional $Function $PreName $FuncCallParaElements',
          lambda sems: merge_dicts(
-             {'construct': 'func_call', 'name': sems[3]}, sems[4]), 1.5),
+            {'construct': 'func_call', 'name': sems[3]['name']},
+            sems[4]), 1.5),
 
     Rule('$FuncCallParaElements',
          '$Optionals ?$Pass $Parameters $FuncCallParaElements',
          lambda sems: {'parameters': (*sems[3]['parameters'],)}, 0.0),
     Rule('$FuncCallParaElements',
-         '$FuncCallParaElement $Joins  $FuncCallParaElements',
+         '$FuncCallParaElement $Joins $FuncCallParaElements',
          lambda sems: {'parameters': (sems[0], *sems[2]['parameters'])}, 1.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
          lambda sems: {'parameters': (sems[0],)}, 0.5),
 
-    # Rule('$FuncCallParaElement', '$Number', itemgetter(0), 1.0),
-    # Rule('$FuncCallParaElement', '$VariableName', itemgetter(0), 0.5),
     Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 0.5),
     Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 0.5),
 
@@ -286,7 +310,7 @@ add_fn_call_rules = [
          lambda sems: {'parameters': (sems[0],)}, 0.5),
     Rule('$FuncParameter',
          '$StringText $Joins ?$FnDataTypeElement1 ?$Parameter $PreName',
-         lambda sems: {'parameters': (sems[0], sems[4])}, 0.5),
+         lambda sems: {'parameters': (sems[0], sems[4]['name'])}, 0.5),
 
     Rule('$PreString', '?of ?type string ?type', {}, 1.0),
     Rule('$FnCallType', 'printf', 'printf', 1.5),
@@ -325,16 +349,16 @@ loop_init_rules = [
 
     Rule('$LoopInitElement', '?$Control $LoopVarNames',
          lambda sems: merge_dicts(
-             sems[1], sems[0], {'construct': 'init'}), 0.0),
-    Rule('$LoopInitElement', '$PreName',
-         lambda sems: {'name': sems[0]}, 0.0),
-    Rule('$LoopInitElement', '$FnDataTypeElement1', itemgetter(0), 0.0),
+             sems[1], sems[0], {'construct': 'init'}), 0.5),
+    Rule('$LoopInitElement', '$VariableName',
+         lambda sems: {'name': sems[0]['name']}, 0.0),
+    Rule('$LoopInitElement', '$DataTypeMention', itemgetter(0), 0.5),  # Review with Himanshu
 
     # for initializing loop variables and variable declarations
     Rule('$LoopInitElement', '$InitElement', itemgetter(0)),
     Rule('$InitElement', '$Equal ?$To $Exp',
          lambda sems: {'value': sems[2]}, 0.5),
-    Rule('$InitElement', '$Optionals $Exp',
+    Rule('$InitElement', '$Optional $Modifier $Exp',
          lambda sems: {'value': sems[1]}, 0.5),
     Rule('$Equal', 'initialize', {}, 0.25),
     Rule('$Equal', 'initialized', {}, 0.25),
@@ -461,13 +485,12 @@ cond_rules = [
 ]
 
 exp_rules = [
-    # Rule('$ROOT', '$Exp', lambda sems: {'exp': sems[0]}),
+    Rule('$ROOT', '$Exp', lambda sems: {'exp': sems[0]}),
     Rule('$Exp', '$UnOp $Exp', lambda sems: (sems[0], sems[1])),
     Rule('$Exp', '$Exp $UnOp', lambda sems: ('p' + sems[1], sems[0])),
     Rule('$Exp', '$Exp $BinOp $Exp', lambda sems: (sems[1], sems[0], sems[2])),
     Rule('$Exp', '$Number', lambda sems: ('value', sems[0]), 0.5),
-    Rule('$Exp', '$VariableName', lambda sems: ('name', sems[0])),
-    Rule('$Exp', '?$Optionals $VariableName', lambda sems: ('name', sems[1])),
+    Rule('$Exp', '$VariableName', lambda sems: ('name', sems[0]['name'])),
 
     Rule('$BinOp', 'plus', '+', 0.25),
     Rule('$BinOp', 'times', '*', 0.25),
@@ -484,15 +507,20 @@ exp_rules = [
     Rule('$UnOp', 'minus minus', '--', 0.6),
     Rule('$UnOp', 'increment', '++', 0.25),
     Rule('$UnOp', 'plus plus', '++', 0.6),
+    Rule('$UnOp', 'address ?of', '&', 0.25),
+    Rule('$UnOp', 'value at address', '*', 0.25),
+    Rule('$UnOp', 'dereference', '*', 0.25),
 ]
 
 ptr_rules = [
-    Rule('$VariableNameMention', '$Pointer', {'cons': 'pointer'}, 0.5),
-    Rule('$PreVariable', '$Pointer', {'cons': 'pointer'}, 1.0),
-    Rule('$Pointer', 'pointer', {}, 0.0),
-    Rule('$Pointer', 'points ?to', {}, 0.0),
-    Rule('$Pointer', 'pointing ?to', {}, 0.0),
-    Rule('$Initialize', 'point'),
+    # Rule('$VariableNameMention', '$Pointer',
+    #      {'construct': 'pointer'}, 0.5),
+    # Rule('$PreVariable', '$Pointer',
+    #      {'construct': 'pointer'}, 1.0),
+    # Rule('$Pointer', 'pointer', {}, 0.0),
+    # Rule('$Pointer', 'points ?to', {}, 0.0),
+    # Rule('$Pointer', 'pointing to', {}, 0.0),
+    # Rule('$Initialize', 'point'),
 ]
 
 return_stmt_rules = [
@@ -526,7 +554,7 @@ if_rules = [
           lambda sems: merge_dicts({'request': 'declare'}, sems[2])),
      Rule('$IfElseStatement', '$If ?$Statement', {'construct': 'if'}),
      Rule('$IfElseStatement', '$If $Else ?$Statement',
-          {'construct': 'if-else'}),
+          {'construct': 'if_else'}),
      Rule('$IfElseStatement', '$Conditional ?$Statement', {'construct': 'if'}),
      Rule('$If', 'if', {}, 0.75),
      Rule('$Else', 'else', {}, 0.75),
@@ -541,7 +569,7 @@ if_rules = [
      Rule('$ROOT', '$Add ?$Optionals $ElseIf ?$Statement',
           lambda sems: merge_dicts({'request': 'add'}, sems[2])),
      Rule('$ElseIf', '$Else', {'construct': 'else'}),
-     Rule('$ElseIf', '$Else $If', {'construct': 'else-if'}),
+     Rule('$ElseIf', '$Else $If', {'construct': 'else_if'}),
      Rule('$Add', 'add'),
      Rule('$Condition', 'condition', {}),
 ]
@@ -552,7 +580,7 @@ nav_rules = [
     Rule('$NavElements', '$NavElement $NavElement ?$NavElement',
          lambda sems: merge_dicts(sems[0], sems[1], sems[2]), 0.0),
     Rule('$NavElements', '$SpecialElems $VariableName',
-         lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.0),
+         lambda sems: merge_dicts(sems[0], {'name': sems[1]['name']}), 0.0),
 
     Rule('$NavElement', '$JumpType', itemgetter(0), 1.0),
     Rule('$NavElement', '$JumpDirection', itemgetter(0), 1.0),
@@ -588,7 +616,7 @@ nav_rules = [
     Rule('$NumTypes', '$PosNum', lambda sems: {'value': sems[0]}, 0.5),
 
     Rule('$Line', 'line', {}, 0),
-    Rule('$Place', 'lines', {}, 0),
+    Rule('$Line', 'lines', {}, 0),
     Rule('$Place', 'place', {}, 0),
     Rule('$Place', 'places', {}, 0),
     Rule('$Place', 'position', {}, 0),
@@ -635,11 +663,11 @@ array_index_rules = [
     Rule('$ArrRef', '$NameMention $IndexMention',
          lambda sems: ('[]', sems[0]['name'], sems[1]['index'])),
     Rule('$ArrRef', '$IndexMention $NameMention',
-         lambda sems: ('[]', sems[0]['index'], sems[1]['name'])),
+         lambda sems: ('[]', sems[1]['name'], sems[0]['index'])),
     Rule('$IndexMention', '$Elem $Exp',
          lambda sems: {'index': sems[1]}),
-    Rule('$IndexMention', '?$Elem $At $Exp',
-         lambda sems: {'index': sems[2]}),
+    Rule('$IndexMention', '?$Elem $At ?$Index $Exp',
+         lambda sems: {'index': sems[3]}),
     Rule('$IndexMention', '$Of $Exp',
          lambda sems: {'index': sems[1]}),
     Rule('$Index', 'index', {}, 0.25),
@@ -649,8 +677,10 @@ array_index_rules = [
     Rule('$Of', 'sub', {}, 0.25),
     Rule('$Elem', 'element', {}, 0.25),
     Rule('$Elem', 'value', {}, 0.25),
-    Rule('$NameMention', '?$Elem ?$Of $VariableName',
-         lambda sems: {'name': ('name', sems[2])}),
+    Rule('$NameMention', '?$Elem $Of $VariableName',
+         lambda sems: {'name': ('name', sems[2]['name'])}, 0.25),
+    Rule('$NameMention', '$VariableName',
+         lambda sems: {'name': ('name', sems[0]['name'])}),
 ]
 
 rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules\
@@ -668,7 +698,6 @@ rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
 grammar = Grammar(
     rules=rules,
     annotators=[
-        DataTypeAnnotator(),
         TokenAnnotator(),
         VariableNameAnnotator(),
         NumberAnnotator(),

@@ -20,36 +20,34 @@ class TokenAnnotator(Annotator):
 
 class DataTypeAnnotator(Annotator):
     def annotate(self, tokens):
-        if len(tokens) == 1:
-            if tokens[0] in ['int', 'integer', 'double', 'float', 'char',
-                             'character']:
-                val = tokens[0]
-                if val == 'integer':
-                    val = 'int'
-                elif val == 'character':
-                    val = 'char'
-                return [('$DataType', val)]
-        elif len(tokens) == 2:
-            if tokens[0] in ['long', 'short'] and\
-               tokens[1] in ['int', 'integer']:
-                val = tokens[1]
-                if val == 'integer':
-                    val = 'int'
-                return [('$DataType', tokens[0] + ' ' + val)]
+        types = [
+            'int', 'integer',
+            'short', 'short int',
+            'long', 'long int', 'long double',
+            'long long', 'long long int',
+            'char', 'character',
+            'float', 'double',
+        ]
+        if len(tokens) <= 3 and len(tokens) > 0:
+            typ = ' '.join(tokens)
+            typ = typ.replace('character', 'char')
+            typ = typ.replace('integer', 'int')
+            if typ in types:
+                return [('$DataType', typ)]
         return []
 
 
 class VariableNameAnnotator(Annotator):
     def annotate(self, tokens):
-        if len(tokens) > 0 and tokens[0] == 'pointer':
-            return [('$VarName', '*' + '_'.join(tokens[1:]))]
-        if len(tokens) > 0 and tokens[0] == 'address':
-            if len(tokens) > 1 and tokens[1] == 'of':
-                res_words = ['variable', 'function', 'array', 'int', 'integer',
-                             'double', 'float', 'char', 'character']
-                if len(tokens) > 2 and tokens[2] in res_words:
-                    return [('$VarName', '&' + '_'.join(tokens[3:]))]
-            return [('$VarName', '&' + '_'.join(tokens[2:]))]
+        # if len(tokens) > 0 and tokens[0] == 'pointer':
+        #     return [('$VarName', '*' + '_'.join(tokens[1:]))]
+        # if len(tokens) > 0 and tokens[0] == 'address':
+        #     if len(tokens) > 1 and tokens[1] == 'of':
+        #         res_words = ['variable', 'function', 'array', 'int', 'integer',
+        #                      'double', 'float', 'char', 'character']
+        #         if len(tokens) > 2 and tokens[2] in res_words:
+        #             return [('$VarName', '&' + '_'.join(tokens[3:]))]
+        #     return [('$VarName', '&' + '_'.join(tokens[2:]))]
         return [('$VarName', '_'.join(tokens))]
 
 
@@ -92,7 +90,7 @@ class NumberAnnotator(Annotator):
         types = [int, float]
         try:
             val = w2n.word_to_num(' '.join(tokens))
-            if (type(val) in types):
+            if type(val) in types:
                 return [('$Number', val)]
         except ValueError:
             pass
@@ -126,7 +124,6 @@ class StringNumberAnnotator(Annotator):
             try:
                 if (type(w2n.word_to_num(' '.join(tokens))) in types):
                     val = w2n.word_to_num(' '.join(tokens))
-                    # print(val)
                     return [('$StrNumber', val)]
             except ValueError:
                 pass

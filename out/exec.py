@@ -8,6 +8,7 @@ import re
 
 
 def expression(sem):
+    '''converts semantic for expression to pycparser ast node'''
     if sem[0] == 'name':
         return ID(sem[1])
     elif sem[0] == 'value':
@@ -21,6 +22,7 @@ def expression(sem):
 
 
 def array_decl(name, type, size):
+    '''converts semantic for array declaration to pycparser ast node'''
     if len(size) == 1:
         return ArrayDecl(
             TypeDecl(name, [], IdentifierType([type])),
@@ -31,27 +33,29 @@ def array_decl(name, type, size):
 
 
 def loop_decl(type):
+    '''converts semantic for loops to pycparser ast node'''
     if type == 'for':
         return For(None, None, None, Compound([]))
     elif type == 'while':
         return While(Constant('boolean', 'true'), Compound([]))
 
 
-def var_decl(name, type, value=None):
+def var_decl(name, type, value=None, modifier=None):
+    '''converts semantic for variable declaration to pycparser ast node'''
+    typ_decl = TypeDecl(name, [], IdentifierType([type]))
+    if modifier is not None:
+        typ_decl = PtrDecl([], typ_decl)
     return Decl(
         name, [], [], [],
-        TypeDecl(name, [], IdentifierType([type])),
+        typ_decl,
         value if value is None else expression(value),
         None
     )
 
-
-def ptr_decl(name, type):
-    pass
-
 spec = {
-    # variable
-    'declare_variable_req': {'name': None, 'type': None, 'value': 'opt'},
+    # variable and pointer
+    'declare_variable_req': {'name': None, 'type': None, 'value': 'opt',
+                             'modifier': 'opt'},
     'declare_variable_tpl': var_decl,
 
     # array
@@ -81,8 +85,8 @@ spec = {
     'declare_if_tpl': lambda: If(Constant('boolean', 'true'),
                                  Compound([]), None),
 
-    'declare_if-else_req': {},
-    'declare_if-else_tpl': lambda: If(Constant('boolean', 'true'),
+    'declare_if_else_req': {},
+    'declare_if_else_tpl': lambda: If(Constant('boolean', 'true'),
                                       Compound([]), Compound([])),
 
     'add_condition_req': {'cond': None},
@@ -162,7 +166,7 @@ def add_condition(stmt, pos, cond):
     if hasattr(stmt, 'cond'):
         stmt.cond = cond
         return None, True
-    return False, None
+    return None, False
 
 
 def add_parameter(stmt, pos, param):
@@ -203,22 +207,24 @@ def add_update(stmt, pos, upd):
 def add_else(stmt, pos, els):
     '''adds else block to if statement'''
     if not hasattr(stmt, 'iffalse'):
-        return False
+        return None, False
     if stmt.iffalse is None:
+        coord = Coord('file', coord_last_line(stmt) + 2, 0)
         stmt.iffalse = els
-        return True
+        return coord, True
     elif isinstance(stmt.iffalse, If):
         return add_else(stmt.iffalse, pos, els)
-    return True
+    return None, True
 
 
 def add_else_if(stmt, pos, elseif):
     if not hasattr(stmt, 'iffalse'):
-        return False
+        return None, False
     old_iffalse = stmt.iffalse
+    coord = Coord('file', coord_last_line(stmt) + 2, 0)
     stmt.iffalse = elseif
     stmt.iffalse.iffalse = old_iffalse
-    return True
+    return coord, True
 
 
 def add_statement(stmt, pos, attr):
@@ -314,7 +320,7 @@ def find_node(stmt, line, attr):
         # If
         if isinstance(stmt[i], If):
             if stmt[i].iftrue.block_items is not None:
-                children = stmt[i].iftrue.block_items
+                children = list(stmt[i].iftrue.block_items)
             if stmt[i].iffalse is not None:
                 if isinstance(stmt[i].iffalse, If):
                     children.append(stmt[i].iffalse)
@@ -344,13 +350,16 @@ def req_checker(name, sem):
             # error: missing field
             if req[elem] is None:
                 msg = '{0} missing'.format(elem)
-                err = {'output': 'Error : ' + msg + '\n' + str(sem), 'error': 'Could not generate output.\nMissing Field : ' + elem}
+                err = {'output': 'Error: ' + msg + '\n' + str(sem),
+                       'error': 'Could not generate output.\
+                           \nMissing Field: ' + elem}
                 return err
             elif req[elem] is 'opt':
-                continue
+                args.append(None)
             else:
                 args.append(req[elem])
-        args.append(sem[elem])
+        else:
+            args.append(sem[elem])
     return tpl(*args)
 
 
@@ -359,9 +368,11 @@ def handle_req(ext, fmt, sem, line):
     req_type = '{0}_{1}'.format(sem['request'], sem['construct'])
     node = req_checker(req_type, sem)
     coord = Coord('file', line, 0)
+
     # error: missing field
     if isinstance(node, dict):
         return coord, node
+
     if req_type == 'declare_function':
         coord.line = 3
         ext.insert(0, node)
@@ -396,6 +407,7 @@ def preprocess(filename):
 def postprocess(fmt, replace):
     '''adds formatting and includes to replace'''
     replace = re.sub('\n+', '\n', replace)
+    replace = re.sub('else\s+if', 'else if', replace)
     replace = ''.join(fmt['includes']) + '\n' + replace
     return replace
 
@@ -418,7 +430,9 @@ def generate_code(sems, filename, line):
             if 'request' in sem and sem['request'] in ['navigate']:
                 codes.append(sem)
             else:
-                codes.append({'output': 'UnknownReqError' + '\n' + str(sem), 'error': 'Could not understand request.\n' + 'Sem : ' + str(sem)})
+                codes.append({'output': 'UnknownReqError' + '\n' + str(sem),
+                              'error': 'Could not understand request.\
+                                  \nSem : ' + str(sem)})
             continue
         new_ext = deepcopy(ast.ext)
         new_fmt = deepcopy(fmt)
@@ -440,13 +454,15 @@ def generate_code(sems, filename, line):
 
 
 def get_scope_variables():
-    return ['a', 'b', 'c', 'x', 'y', 'z', 'i', 'j', 'k', 'found', 'element']
+    return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k',
+            'found', 'element', 'program_count', 'test_case', 'ptr',
+            'abc', 'max', 'sum', 'min']
 
 if __name__ == '__main__':
     codes = generate_code(
-        [{'request': 'add', 'construct': 'init',
-          'name': 'x', 'type': 'int', 'value': ('value', 0)}],
+        [{'request': 'declare', 'construct': 'variable',
+          'name': 'ptr', 'type': 'int', 'modifier': 'pointer'}],
         'hello.c',
-        3
+        20
     )
     print(codes)
