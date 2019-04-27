@@ -344,6 +344,10 @@ init_ips = [
      {'request': 'declare', 'construct': 'assignment',
       'lhs': ('[]', ('name', 'a'), ('name', 'j')),
       'rhs': ('+', ('[]', ('name', 'a'), ('name', 'j')), ('value', 1))}],
+    ['set a of i to 10',
+     {'request': 'declare', 'construct': 'assignment',
+      'lhs': ('[]', ('name', 'a'), ('name', 'i')),
+      'rhs': ('value', 10)}]
 ]
 
 loop_ips = [

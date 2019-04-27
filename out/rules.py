@@ -142,6 +142,7 @@ var_name_rules = [
          lambda sems: merge_dicts(sems[0], {'name': sems[1]}), 0.25),
     Rule('$VariableName', '$PreVariable $PreVariable $VarName',
          lambda sems: merge_dicts(sems[0], sems[1], {'name': sems[2]}), 1.0),
+    Rule('$VariableName', '$ScopeVariable', lambda sems: {'name': sems[0]}),
     Rule('$PreVariable', 'variable', {'construct': 'variable'}, 0.5),
     Rule('$PreVariable', 'function', {'construct': 'function'}, 0.5),
     Rule('$PreVariable', 'array', {'construct': 'array'}, 0.5),
@@ -152,14 +153,6 @@ var_name_rules = [
     Rule('$PreVariable', 'name', {}, 0.5),
     Rule('$PreVariable', '$PrePackName', {'construct': 'package'}, 0.5),
     Rule('$Variable', 'variable', {}),
-
-    # Rule('$PreVariable', '$DataTypeMention', itemgetter(0)),
-    Rule('$VariableName', '$ScopeVariable', lambda sems: {'name': sems[0]}),
-]
-
-arr_name_rules = [
-    # Rule('$VariableNameMention', 'array', {'construct': 'array'}, 0.5),
-    # Rule('$PreVariable', 'array', {'construct': 'array'}, 1.0),
 ]
 
 arr_size_rules = [
@@ -352,7 +345,7 @@ loop_init_rules = [
              sems[1], sems[0], {'construct': 'init'}), 0.5),
     Rule('$LoopInitElement', '$VariableName',
          lambda sems: {'name': sems[0]['name']}, 0.0),
-    Rule('$LoopInitElement', '$DataTypeMention', itemgetter(0), 0.5),  # Review with Himanshu
+    Rule('$LoopInitElement', '$DataTypeMention', itemgetter(0), 0.5),
 
     # for initializing loop variables and variable declarations
     Rule('$LoopInitElement', '$InitElement', itemgetter(0)),
@@ -612,7 +605,6 @@ nav_rules = [
     Rule('$Num', 'number', {}, 0.5),
 
     Rule('$NumTypes', '$Number', lambda sems: {'value': sems[0]}, 0.5),
-    Rule('$NumTypes', '$StrNumber', lambda sems: {'value': sems[0]}, 0.5),
     Rule('$NumTypes', '$PosNum', lambda sems: {'value': sems[0]}, 0.5),
 
     Rule('$Line', 'line', {}, 0),
@@ -669,7 +661,7 @@ array_index_rules = [
     Rule('$IndexMention', '?$Elem $At ?$Index $Exp',
          lambda sems: {'index': sems[3]}),
     Rule('$IndexMention', '$Of $Exp',
-         lambda sems: {'index': sems[1]}),
+         lambda sems: {'index': sems[1]}, 0.25),
     Rule('$Index', 'index', {}, 0.25),
     Rule('$Index', 'position', {}, 0.25),
     Rule('$At', 'at', {}, 0.25),
@@ -683,7 +675,7 @@ array_index_rules = [
          lambda sems: {'name': ('name', sems[0]['name'])}),
 ]
 
-rules_1 = decl_rules + dec_constructs + var_name_rules + arr_name_rules\
+rules_1 = decl_rules + dec_constructs + var_name_rules\
      + ptr_rules
 rules_2 = func_name_rules + func_param_rules + func_call_rules\
      + add_fn_call_rules
@@ -703,7 +695,6 @@ grammar = Grammar(
         NumberAnnotator(),
         PackageTypeAnnotator(),
         PositionalNumberAnnotator(),
-        StringNumberAnnotator(),
         StringTextAnnotator(),
         ScopeVariablesAnnotator(),
     ]

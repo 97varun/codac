@@ -123,14 +123,16 @@ spec = {
     'declare_func_call_req': {'name': None, 'parameters': 'opt'},
     'declare_func_call_tpl': lambda name, parameters: FuncCall(
         ID(name),
-        ExprList(list(map(expression, parameters)))
+        [] if parameters is None else ExprList(list(map(expression, parameters)))
     ),
 
     'declare_return_req': {'value': None},
     'declare_return_tpl': lambda value: Return(expression(value)),
 
-    'add_parameter_req': {'name': None, 'type': None},
-    'add_parameter_tpl': var_decl,
+    'add_parameter_req': {'name': None, 'type': None,
+                          'modifier': 'opt', 'position': 'opt'},
+    'add_parameter_tpl': lambda name, type, modifier, position:
+        (var_decl(name, type, None, modifier), position),
 }
 
 
@@ -174,9 +176,9 @@ def add_parameter(stmt, pos, param):
     if not hasattr(stmt, 'decl'):
         return None, False
     if stmt.decl.type.args is None:
-        stmt.decl.type.args = ParamList([param])
+        stmt.decl.type.args = ParamList([param[0]])
     else:
-        stmt.decl.type.args.params.append(param)
+        stmt.decl.type.args.params.insert(param[1] - 1, param[0])
     return None, True
 
 
@@ -380,12 +382,15 @@ def handle_req(ext, fmt, sem, line):
         fmt['includes'].append(node)
     else:
         coord, found = find_node(ext, line, {'method': req_type, 'arg': node})
-    # error: could not find node to insert at
-    if found is False:
-        err = {'output': 'ASTInsertErr' + '\n' + str(sem), 'Error': 'Could not insert into the A. S. T.'}
-        return coord, err
+        # error: could not find node to insert at
+        if found is False:
+            err = {'output': 'ASTInsertErr' + '\n' + str(sem),
+                   'Error': 'Could not insert into the A. S. T.'}
+            return coord, err
     if coord is None:
         coord = Coord('file', line, 0)
+    if isinstance(node, tuple):
+        node = node[0]
     coord.line += len(fmt['includes'])
     return coord, node
 
@@ -460,9 +465,9 @@ def get_scope_variables():
 
 if __name__ == '__main__':
     codes = generate_code(
-        [{'request': 'declare', 'construct': 'variable',
-          'name': 'ptr', 'type': 'int', 'modifier': 'pointer'}],
+        [{'request': 'add', 'construct': 'parameter',
+          'name': 'argc', 'type': 'int', 'position': 1}],
         'hello.c',
-        20
+        4
     )
     print(codes)
