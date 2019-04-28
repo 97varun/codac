@@ -1,10 +1,6 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as child_process from 'child_process';
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	let codac = new Codac();
 
@@ -17,13 +13,16 @@ export function activate(context: vscode.ExtensionContext) {
 	let dictation = vscode.commands.registerCommand('extension.dictation', () => {
 		codac.dictate();
 	});
+	let replace = vscode.commands.registerCommand('extension.replace', (replace, cursor) => {
+		codac.replaceCode(replace, cursor);
+	});
 
 	context.subscriptions.push(listen);
 	context.subscriptions.push(stop);
 	context.subscriptions.push(dictation);
+	context.subscriptions.push(replace);
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {}
 
 class Codac {	
@@ -62,7 +61,6 @@ class Codac {
 
 	public async navigate(sem: any) {
 		let self = this;
-		// let cur_cursor = self.editor.getCursorPosition(); //cur_cursor = line,character
 		try {
 			//move across line[s]
 			if (sem.hasOwnProperty('construct') && sem.construct === 'line') {
@@ -125,23 +123,17 @@ class Codac {
 	public insertError(message: string) {
 		let tree = this.errorTree;
 		let idx = tree.getLength() + 1;
-		let msg = message.split('\n');
-		let treeData = [new SampleNode(idx +'. '+ msg[0], [])];
-		for (let index = 2; index <= msg.length; index++) {
-			idx += 1;
-			treeData.push(new SampleNode(idx +'. ' + msg[index], []));	
-		}			
+		let treeData = [{'error': (`${idx}. ${message}`), 'children': []}];
         tree.updateTree(treeData);
     }
 	
 	public async handleError(sem: any) {
-		let s_tree = this.suggestTree;
 		if (sem.hasOwnProperty('input')) {
-			let treeData = [new SampleNode('-> ' + sem.input, [])];
+			let treeData: any = [{'input': `${sem.input}`, 'children': []}];
 			if (sem.hasOwnProperty('output')) {
-				treeData.push(new SampleNode('    1. ' + sem.output.toString(), []));
+				treeData[0].children = [{'output': `1. ${sem.output}`, 'children': []}];
 			}
-			s_tree.setTree(treeData);
+			this.suggestTree.setTree(treeData);
 		}
 		if (sem.hasOwnProperty('error')) {
 			this.insertError(sem.error);
@@ -158,31 +150,36 @@ class Codac {
 		} else if (JSONdata.hasOwnProperty('error')) {
 			this.handleError(JSONdata);
 		} else if (JSONdata.hasOwnProperty('audio_type') && JSONdata.audio_type === 'dictation') {
-			let treeData = [new SampleNode(`${JSONdata.output}`, [])];
+			let treeData = [{output: JSONdata.output, children: []}];
 			tree.updateTree(treeData);
 		} else{
-			let treeData = [new SampleNode('-> ' + JSONdata[0].input, [])];
+			// [{"input": "..."}, {"output": "...", "replace": "..."}, ...]
+			// [{"input": "..."}, {"error": "..."}]
+			let treeData: any = [{...JSONdata[0], children: []}];
 			if (JSONdata[1].hasOwnProperty('error')) {
 				this.handleError(Object.assign({}, JSONdata[0], JSONdata[1]));
 				return;
-			}
-			else if (JSONdata[1].hasOwnProperty('request') && JSONdata[1]['request'] === 'navigate'){
+			} else if (JSONdata[1].hasOwnProperty('request') && JSONdata[1]['request'] === 'navigate') {
 				self.navigate(JSONdata[1]);
-			}
-			else{
-				for (let i = 1; i < JSONdata.length; ++i) {
-					treeData.push(new SampleNode(`    ${i}. ${JSONdata[i].output}`, []));
-				}
+			} else{
+				treeData[0].children = JSONdata.slice(1).map(
+					(elem: any, idx: number) => {
+						return {'output': `${idx + 1}. ${elem.output}`,
+								'replace': elem.replace,
+								'cursor': elem.cursor,
+								children: []};
+					}
+				);
 				await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);	
 			}
 			tree.setTree(treeData);
 		}
 	}
 
-	public print_dictation_op(){
-		let childrenLabel = this.dictateTree.getChildren(undefined).map((child) => {
-			return child.label;
-		});
+	public printDictationOp(){
+		let childrenLabel = this.dictateTree.getChildren(undefined).map(
+			(child) => child.label
+		);
 		let stringToInsert = childrenLabel.slice(1).join(' ');
 		this.editor.insertText(stringToInsert);
 	}
@@ -191,7 +188,7 @@ class Codac {
 		let self = this;
 		if (statement) {
 			await vscode.commands.executeCommand('editor.action.selectAll');
-			await vscode.commands.executeCommand('editor.action.deleteLines');
+			// await vscode.commands.executeCommand('editor.action.deleteLines');
 			await self.editor.insertText(statement);
 			await self.editor.moveCursor(new vscode.Position(cursor - 1, 0));
 			await vscode.commands.executeCommand('cursorEnd');				
@@ -218,7 +215,7 @@ class Codac {
 			self.setStatusBarBtn('✖️️ Stop', 'extension.stop');
 		} else {
 			tree = this.dictateTree;
-			let treeData = [new SampleNode('Your String :', [])];
+			let treeData = [{input: 'Your String:', children: []}]
 			tree.setTree(treeData);
 			self.setStatusBarBtn('✖️️ Stop Dictation', 'extension.dictation');
 		}
@@ -252,7 +249,6 @@ class Codac {
 		self.recognizer.stderr.on('data', function(data: string) {
 			console.log(`ERROR: ${data}`);
 			console.log(data);
-			// console.log(data.toString());
 			self.insertError('On Recognizer stderr :' + data.toString());
 		});
 
@@ -272,27 +268,14 @@ class Codac {
 			}
 			this.startRecognizer('dictate_audio');
 		} else {
-			this.print_dictation_op();
+			this.printDictationOp();
 			this.stopRecognizer();			
 		}
 	}
 }
 
-class SampleNode extends vscode.TreeItem{
-	private children: SampleNode[];
-	public label: string;
-	constructor(label: string, children: SampleNode[]) {
-		super(label);
-		this.children = children;
-		this.label = label;
-	}
-	public getChildren() {
-		return this.children;
-	}
-}
-
 class SampleTree implements vscode.TreeDataProvider<vscode.TreeItem> {
-	private tree: SampleNode[];
+	private tree: any[];
 	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
 	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
 
@@ -300,25 +283,38 @@ class SampleTree implements vscode.TreeDataProvider<vscode.TreeItem> {
 		this.tree = [];
 	}
 
-	public getTreeItem(element: SampleNode): vscode.TreeItem {
-		return {
-			label: element.label
-		};
-	}
-	public getChildren(element?: SampleNode): SampleNode[] {
-		return element ? element.getChildren() : this.tree;
+	public getTreeItem(element: any): vscode.TreeItem {
+		let treeItem = new vscode.TreeItem('');
+		if (element.hasOwnProperty('error')) {
+			treeItem.label = element.error;
+		} else if (element.hasOwnProperty('output')) {
+			treeItem.label = element.output;
+			if (element.hasOwnProperty('replace')) {
+				treeItem.command = {
+					command: 'extension.replace',
+					title: '',
+					arguments: [element.replace, element.cursor]
+				}
+			}
+		} else if (element.hasOwnProperty('input')) {
+			treeItem.label = element.input;
+			treeItem.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
+		}
+		return treeItem;
 	}
 
-	public setTree(tree: SampleNode[]) {
+	public getChildren(element?: any): any[] {
+		return element ? element.children : this.tree;
+	}
+
+	public setTree(tree: any[]) {
 		this.tree = tree;
 		this._onDidChangeTreeData.fire();		
-		// console.log(tree);
 	}
 
-	public updateTree(tree: SampleNode[]) {
+	public updateTree(tree: any[]) {
 		this.tree.push(...tree);
 		this._onDidChangeTreeData.fire();
-		// console.log(tree);
 	}
 
 	public getLength(): number {
@@ -336,15 +332,21 @@ class Editor {
 			let pos = new vscode.Position(0, 0);
 			const editor = vscode.window.activeTextEditor;
 			if (editor.selection.isEmpty) {
+				console.log('insertText: insert');
 				pos = editor.selection.active;
+				editor.edit(
+					editBuilder => {
+						editBuilder.insert(pos, text);
+					}
+				);
+			} else {
+				console.log('insertText: replace');
+				editor.edit(
+					editBuilder => {
+						editBuilder.replace(editor.selection, text);
+					}
+				);
 			}
-			console.log("InsertText Func : ");
-			console.log(pos.line, pos.character, text);
-			editor.edit(
-				editBuilder => {
-					editBuilder.insert(pos, text);
-				}
-			);
 		}
 	}
 
