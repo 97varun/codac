@@ -463,7 +463,7 @@ def generate_code(sems, filename, line):
 def get_scope_variables():
     return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k', 'g', 'h',
             'found', 'element', 'program_count', 'test_case', 'ptr',
-            'abc', 'max', 'sum', 'min']
+            'abc', 'max', 'sum', 'min', 'date', 'result', 'limit']
 
 if __name__ == '__main__':
     codes = generate_code(

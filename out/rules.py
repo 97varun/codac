@@ -295,15 +295,15 @@ add_fn_call_rules = [
          itemgetter(5), 1.0),
     Rule('$FnCallParaElements', '?$Optionals ?$Pass $PreString $FuncParameter',
          itemgetter(3), 1.0),
-    Rule('$FuncParameter', '$StringText',
-         lambda sems: {'parameters': (('str', sems[0]),)}, 0.5),
     Rule('$FuncParameter',
          '$StringText $Joins ?$Parameter $Exp',
-         lambda sems: {'parameters': (('str', sems[0]), sems[3])}, 0.5),
+         lambda sems: {'parameters': (('str', sems[0]), sems[3])}, 1.0),
     Rule('$FuncParameter',
          '$StringText $Joins $FnDataTypeElement1 ?$Parameter $Exp',
          lambda sems: {'parameters': (('str', sems[0]), sems[4])}, 1.0),
-
+    Rule('$FuncParameter', '$StringText',
+         lambda sems: {'parameters': (('str', sems[0]),)}, 0.5),
+    
     Rule('$PreString', '?$Optional ?$Type $String ?$Type ?$PreFnName', {}, 1.0),
     Rule('$FnCallType', 'printf', 'printf', 1.5),
     Rule('$FnCallType', 'print f', 'printf', 1.5),
@@ -649,7 +649,7 @@ edit_rules = [
     Rule('$JpAmount', '?$Num $NumType',
          lambda sems: {'value': (sems[1]['value'], )}, 0.5),
     Rule('$JpAmount', '?$Num $NumType $AdditionalNum',
-         lambda sems: {'value': ((sems[1]['value'], )+ sems[2]['value'])}, 1.0),
+         lambda sems: {'value': ((sems[1]['value'], ) + sems[2]['value'])}, 1.0),
 
     Rule('$AdditionalNum', '?$PreNum $NumType',
          lambda sems: {'value': (sems[1]['value'], )}, 0.5),
