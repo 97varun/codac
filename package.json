@@ -62,8 +62,8 @@
 				"command": "extension.dictation",
 				"title": "Dictation",
 				"icon": {
-					"light": "‎⁨icons8-microphone-filled50.png",
-					"dark": "icons8-microphone-filled-50.png"
+					"light": "‎⁨media/icons8-microphone-filled50.png",
+					"dark": "media/icons8-microphone-filled-50.png"
 				  }
 			}
 		]
