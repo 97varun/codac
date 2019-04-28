@@ -526,6 +526,10 @@ return_stmt_rules = [
          lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
     Rule('$ReturnElements', '$ReturnValue', itemgetter(0), 0),
 
+    Rule('$ReturnElements', '$Optionals $ReturnFuncElement $ReturnValue',
+         lambda sems: merge_dicts(sems[1], {'value': (sems[2]['value'][0],
+                                            sems[2]['value'][1] + '()')}), 1.0),
+
     Rule('$ReturnElements', '$Null',
          lambda sems: {'value': ('value', 'null')}, 2.5),
 
@@ -534,17 +538,11 @@ return_stmt_rules = [
     Rule('$ReturnValue', '$Exp',
          lambda sems: {'value': sems[0]}, 0),
 
-    # Rule('$ReturnElement', '$Variable', 0.0),
-    # Rule('$ReturnElement', 'array', 0.0),
-    # Rule('$ReturnElement', 'string', 0.0),
-    # Rule('$ReturnElement', 'expression', 0.0),
-    # Rule('$ReturnElement', '$Function', 0.0),
-
-    Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0.0),
-    Rule('$ReturnElement', 'array', {'type': 'array'}, 0.0),
-    Rule('$ReturnElement', 'string', {'type': 'string'}, 0.0),
-    Rule('$ReturnElement', 'expression', {'type': 'exp'}, 0.0),
-    Rule('$ReturnElement', '$Function', {'type': 'function'}, 0.0),
+    Rule('$ReturnElement', '$Variable', 0.0),
+    Rule('$ReturnElement', 'array', 0.0),
+    Rule('$ReturnElement', 'string', 0.0),
+    Rule('$ReturnElement', 'expression', 0.0),
+    Rule('$ReturnFuncElement', '$Function', 0.0),
 
     Rule('$Null', 'null', {}, 1.0),
 ]
