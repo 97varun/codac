@@ -125,7 +125,7 @@ spec = {
     'declare_func_call_req': {'name': None, 'parameters': 'opt'},
     'declare_func_call_tpl': lambda name, parameters: FuncCall(
         ID(name),
-        [] if parameters is None else ExprList(list(map(expression, parameters)))
+        None if parameters is None else ExprList(list(map(expression, parameters)))
     ),
 
     'declare_return_req': {'value': None},

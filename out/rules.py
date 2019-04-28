@@ -308,6 +308,7 @@ add_fn_call_rules = [
     Rule('$FnCallType', 'printf', 'printf', 1.5),
     Rule('$FnCallType', 'print f', 'printf', 1.5),
     Rule('$FnCallType', 'print', 'printf', 1.5),
+    Rule('$FnCallType', 'scan', 'scanf', 1.5),
     Rule('$FnCallType', 'scanf', 'scanf', 1.5),
     Rule('$FnCallType', 'scan f', 'scanf', 1.5),
     Rule('$Mod', 'mod', {}, 0),
@@ -652,9 +653,9 @@ edit_rules = [
          lambda sems: {'value': ((sems[1]['value'], ) + sems[2]['value'])}, 1.0),
 
     Rule('$AdditionalNum', '?$PreNum $NumType',
-         lambda sems: {'value': (sems[1]['value'], )}, 0.5),
+         lambda sems: merge_dicts(sems[0], {'value': (sems[1]['value'], )}), 0.5),
     Rule('$AdditionalNum', '?$PreNum $NumType $AdditionalNum',
-         lambda sems: {'value': ((sems[1]['value'], ) + sems[2]['value'])}, 1.0),
+         lambda sems:  merge_dicts(sems[0], {'value': ((sems[1]['value'], ) + sems[2]['value'])}), 1.0),
 
 
     Rule('$EditType', 'undo', {'construct': 'undo'}, 1.0),
@@ -664,7 +665,7 @@ edit_rules = [
     Rule('$EditType', 'delete', {'construct': 'delete'}, 1.0),
     Rule('$Change', 'change', {'construct': 'change'}, 1.0),
     Rule('$Change', 'update', {'construct': 'change'}, 1.0),
-    Rule('$PreNum', '$To', {}, 0.0),
+    Rule('$PreNum', '$To', {'is_range': True}, 0.0),
     Rule('$PreNum', '$Optional', {}, 0.0),
 
 ]
