@@ -72,8 +72,6 @@ init_rules = [
     Rule('$Initialize', 'initialize'),
     Rule('$Initialize', 'set'),
     Rule('$Initialize', 'make'),
-    Rule('$Initialize', 'change'),
-    Rule('$Initialize', 'update'),
     Rule('$Initialization', '$Lhs ?$Equal ?$To ?$Rhs',
          lambda sems: merge_dicts(sems[0], sems[-1])),
     Rule('$Equal', 'equal', itemgetter(0), 0.25),
@@ -102,7 +100,7 @@ data_type_rules = [
     Rule('$DataTypeMention', '$DataType $Type',
          lambda sems: {'type': sems[0]}, 1.0),
     Rule('$DataTypeMention', '$DataType', lambda sems: {'type': sems[0]}),
-    Rule('$Type', 'type'),
+    Rule('$Type', 'type', {}, 0.1),
     Rule('$DataTypeMention', '$To $DataTypeMention', itemgetter(1)),
 
     # pointer types
@@ -144,6 +142,7 @@ var_name_rules = [
          lambda sems: merge_dicts(sems[0], sems[1], {'name': sems[2]}), 1.0),
     Rule('$VariableName', '$ScopeVariable', lambda sems: {'name': sems[0]}),
     Rule('$PreVariable', 'variable', {'construct': 'variable'}, 0.5),
+    Rule('$PreVariable', 'parameter', {'construct': 'variable'}, 0.5),
     Rule('$PreVariable', 'function', {'construct': 'function'}, 0.5),
     Rule('$PreVariable', 'array', {'construct': 'array'}, 0.5),
     Rule('$PreVariable', 'package', {'construct': 'package'}, 0.5),
@@ -246,30 +245,27 @@ func_param_rules = [
     Rule('$Position', 'position', {}, 1.0),
     Rule('$Position', 'position number', {}, 1.5),
 
-    Rule('$Parameter', 'parameter', {}, 1.0),
-    Rule('$Parameter', 'argument', {}, 1.0),
     Rule('$Parameters', 'parameters', {}, 1.0),
     Rule('$Parameters', 'arguments', {}, 1.0),
     Rule('$Parameters', '$Parameter', {}, 0.0),
+    Rule('$Parameter', 'parameter', {}, 1.0),
+    Rule('$Parameter', 'argument', {}, 1.0),
 ]
 
 func_call_rules = [
     Rule('$ROOT', '$FuncCall',
          lambda sems: merge_dicts(sems[0], {'request': 'declare'}), 0.0),
-    Rule('$FuncCall', '$Call ?$Optional $Function $PreName',
-         lambda sems:
-         {'construct': 'func_call', 'name': sems[3]['name']}, 0.0),
     Rule('$FuncCall',
-         '$Call ?$Optional $Function $PreName $FuncCallParaElements',
+         '$Call ?$Optional $PreName ?$FuncCallParaElements',
          lambda sems: merge_dicts(
-            {'construct': 'func_call', 'name': sems[3]['name']},
-            sems[4]), 1.5),
+            {'construct': 'func_call', 'name': sems[2]['name']},
+            sems[3]), 1.5),
 
     Rule('$FuncCallParaElements',
          '$Optionals ?$Pass $Parameters $FuncCallParaElements',
          lambda sems: {'parameters': (*sems[3]['parameters'],)}, 0.0),
     Rule('$FuncCallParaElements',
-         '$FuncCallParaElement $Joins $FuncCallParaElements',
+         '$FuncCallParaElement ?$Joins $FuncCallParaElements',
          lambda sems: {'parameters': (sems[0], *sems[2]['parameters'])}, 1.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
          lambda sems: {'parameters': (sems[0],)}, 0.5),
@@ -287,7 +283,7 @@ func_call_rules = [
 ]
 
 add_fn_call_rules = [
-    Rule('$FuncCall',
+    Rule('$ROOT',
          '$Call ?$Optional ?$Function ?$PreFnName $FnCallType\
               $FnCallParaElements',
          lambda sems: merge_dicts(
@@ -300,12 +296,15 @@ add_fn_call_rules = [
     Rule('$FnCallParaElements', '?$Optionals ?$Pass $PreString $FuncParameter',
          itemgetter(3), 1.0),
     Rule('$FuncParameter', '$StringText',
-         lambda sems: {'parameters': (sems[0],)}, 0.5),
+         lambda sems: {'parameters': (('str', sems[0]),)}, 0.5),
     Rule('$FuncParameter',
-         '$StringText $Joins ?$FnDataTypeElement1 ?$Parameter $PreName',
-         lambda sems: {'parameters': (sems[0], sems[4]['name'])}, 0.5),
+         '$StringText $Joins ?$Parameter $Exp',
+         lambda sems: {'parameters': (('str', sems[0]), sems[3])}, 0.5),
+    Rule('$FuncParameter',
+         '$StringText $Joins $FnDataTypeElement1 ?$Parameter $Exp',
+         lambda sems: {'parameters': (('str', sems[0]), sems[4])}, 1.0),
 
-    Rule('$PreString', '?of ?type string ?type', {}, 1.0),
+    Rule('$PreString', '?$Optional ?$Type $String ?$Type ?$PreFnName', {}, 1.0),
     Rule('$FnCallType', 'printf', 'printf', 1.5),
     Rule('$FnCallType', 'print f', 'printf', 1.5),
     Rule('$FnCallType', 'print', 'printf', 1.5),
@@ -313,6 +312,7 @@ add_fn_call_rules = [
     Rule('$FnCallType', 'scan f', 'scanf', 1.5),
     Rule('$Mod', 'mod', {}, 0),
     Rule('$Mod', 'modulus', {}, 0),
+    Rule('$String', 'string', {}, 0),
 ]
 
 loop_define_rules = [
@@ -534,11 +534,18 @@ return_stmt_rules = [
     Rule('$ReturnValue', '$Exp',
          lambda sems: {'value': sems[0]}, 0),
 
+    # Rule('$ReturnElement', '$Variable', 0.0),
+    # Rule('$ReturnElement', 'array', 0.0),
+    # Rule('$ReturnElement', 'string', 0.0),
+    # Rule('$ReturnElement', 'expression', 0.0),
+    # Rule('$ReturnElement', '$Function', 0.0),
+
     Rule('$ReturnElement', '$Variable', {'type': 'variable'}, 0.0),
     Rule('$ReturnElement', 'array', {'type': 'array'}, 0.0),
     Rule('$ReturnElement', 'string', {'type': 'string'}, 0.0),
     Rule('$ReturnElement', 'expression', {'type': 'exp'}, 0.0),
     Rule('$ReturnElement', '$Function', {'type': 'function'}, 0.0),
+
     Rule('$Null', 'null', {}, 1.0),
 ]
 
@@ -584,6 +591,7 @@ nav_rules = [
     Rule('$JumpType', '$SpecialElems', itemgetter(0), 0),
     Rule('$SpecialElems', 'function', {'construct': 'function'}, 0),
     Rule('$SpecialElems', 'loop', {'construct': 'loop'}, 0),
+    Rule('$SpecialElems', 'variable', {'construct': 'variable'}, 0),
 
     Rule('$JumpDirection', 'up', {'direction': 'up'}, 0),
     Rule('$JumpDirection', 'down', {'direction': 'down'}, 0),
@@ -597,15 +605,17 @@ nav_rules = [
     Rule('$JumpDirection', 'start ?of', {'direction': 'start'}, 0),
     Rule('$JumpDirection', 'inner', {'direction': 'inner'}, 0),
     Rule('$JumpDirection', 'outer', {'direction': 'outer'}, 0),
+    Rule('$JumpDirection', 'current', {'direction': 'current'}, 0),
 
-    Rule('$JumpAmount', '?$Num $NumTypes', itemgetter(1), 0),
+    Rule('$JumpAmount', '?$Num $NumType', itemgetter(1), 0),
 
     Rule('$Nav', 'go ?to', {}, 1.0),
     Rule('$Nav', 'goto', {}, 1.0),
     Rule('$Num', 'number', {}, 0.5),
+    Rule('$Num', 'numbers', {}, 0.5),
 
-    Rule('$NumTypes', '$Number', lambda sems: {'value': sems[0]}, 0.5),
-    Rule('$NumTypes', '$PosNum', lambda sems: {'value': sems[0]}, 0.5),
+    Rule('$NumType', '$Number', lambda sems: {'value': sems[0]}, 0.5),
+    Rule('$NumType', '$PosNum', lambda sems: {'value': sems[0]}, 0.5),
 
     Rule('$Line', 'line', {}, 0),
     Rule('$Line', 'lines', {}, 0),
@@ -615,6 +625,50 @@ nav_rules = [
     Rule('$Place', 'positions', {}, 0),
     Rule('$Place', 'character', {}, 0),
     Rule('$Place', 'characters', {}, 0),
+]
+
+edit_rules = [
+    Rule('$ROOT', '$EditElements',
+         lambda sems: merge_dicts({'request': 'edit'}, sems[0])),
+    Rule('$EditElements', '$EditType ?$EditParams',
+         lambda sems: merge_dicts(sems[0], sems[1]), 0.0),
+    Rule('$EditElements', '$Change $Initialization',
+         lambda sems: merge_dicts(sems[0], sems[1])),
+
+    Rule('$EditParams', '$EditElement $EditElement ?$EditElement',
+         lambda sems: merge_dicts(sems[0], sems[1], sems[2]), 0.0),
+    Rule('$EditParams', '$SpecialElems $VariableName',
+         lambda sems: merge_dicts(
+             {'e_type': sems[0]['construct']},
+             {'name': sems[1]['name']}), 0.0),
+
+    Rule('$EditElement', '$JumpType',
+         lambda sems: {'e_type': sems[0]['construct']}, 1.0),
+    Rule('$EditElement', '$JumpDirection', itemgetter(0), 0.0),
+    Rule('$EditElement', '$JpAmount', itemgetter(0), 0.0),
+
+
+    Rule('$JpAmount', '?$Num $NumType',
+         lambda sems: {'value': (sems[1]['value'], )}, 0.5),
+    Rule('$JpAmount', '?$Num $NumType $AdditionalNum',
+         lambda sems: {'value': ((sems[1]['value'], )+ sems[2]['value'])}, 1.0),
+
+    Rule('$AdditionalNum', '?$PreNum $NumType',
+         lambda sems: {'value': (sems[1]['value'], )}, 0.5),
+    Rule('$AdditionalNum', '?$PreNum $NumType $AdditionalNum',
+         lambda sems: {'value': ((sems[1]['value'], ) + sems[2]['value'])}, 1.0),
+
+
+    Rule('$EditType', 'undo', {'construct': 'undo'}, 1.0),
+    Rule('$EditType', 'redo', {'construct': 'redo'}, 1.0),
+    Rule('$EditType', 'copy', {'construct': 'copy'}, 1.0),
+    Rule('$EditType', 'paste', {'construct': 'paste'}, 1.0),
+    Rule('$EditType', 'delete', {'construct': 'delete'}, 1.0),
+    Rule('$Change', 'change', {'construct': 'change'}, 1.0),
+    Rule('$Change', 'update', {'construct': 'change'}, 1.0),
+    Rule('$PreNum', '$To', {}, 0.0),
+    Rule('$PreNum', '$Optional', {}, 0.0),
+
 ]
 
 struct_name_rules = [
@@ -684,7 +738,7 @@ rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules\
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
           cond_rules + exp_rules + return_stmt_rules + if_rules
 #    + struct_name_rules
-rules_5 = nav_rules + optionals + array_index_rules
+rules_5 = nav_rules + edit_rules + optionals + array_index_rules
 
 rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
 grammar = Grammar(

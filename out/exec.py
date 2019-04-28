@@ -13,6 +13,8 @@ def expression(sem):
         return ID(sem[1])
     elif sem[0] == 'value':
         return Constant('int', str(sem[1]))
+    elif sem[0] == 'str':
+        return Constant('string', str(sem[1]))
     elif sem[0] == '[]':
         return ArrayRef(expression(sem[1]), expression(sem[2]))
     elif len(sem) == 2:
@@ -432,7 +434,7 @@ def generate_code(sems, filename, line):
                 break
         if 'request' not in sem or 'construct' not in sem or\
            sem['request'] not in ['declare', 'add', 'include']:
-            if 'request' in sem and sem['request'] in ['navigate']:
+            if 'request' in sem and sem['request'] in ['navigate', 'edit']:
                 codes.append(sem)
             else:
                 codes.append({'output': 'UnknownReqError' + '\n' + str(sem),
@@ -459,7 +461,7 @@ def generate_code(sems, filename, line):
 
 
 def get_scope_variables():
-    return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k',
+    return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k', 'g', 'h',
             'found', 'element', 'program_count', 'test_case', 'ptr',
             'abc', 'max', 'sum', 'min']
 
