@@ -262,7 +262,7 @@ class Codac {
 		let tree: SampleTree;
 		options = {
 			'audio': [
-				`${__dirname}/tts_test.py`,
+				`${__dirname}/audio.py`,
 			 	`${self.editor.getFileName()}`,
 			 	`${self.editor.getCursorPosition().line + 1}`
 			],
