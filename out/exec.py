@@ -14,7 +14,13 @@ def expression(sem):
     elif sem[0] == 'value':
         return Constant('int', str(sem[1]))
     elif sem[0] == 'str':
-        return Constant('string', str(sem[1]))
+        return Constant('string', f'"{sem[1]}"')
+    elif sem[0] == '()':
+        return FuncCall(
+            ID(sems[1]),
+            None if parameters is None
+            else ExprList(list(map(expression, sems[2])))
+        )
     elif sem[0] == '[]':
         return ArrayRef(expression(sem[1]), expression(sem[2]))
     elif len(sem) == 2:
