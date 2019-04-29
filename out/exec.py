@@ -17,9 +17,9 @@ def expression(sem):
         return Constant('string', f'"{sem[1]}"')
     elif sem[0] == '()':
         return FuncCall(
-            ID(sems[1]),
-            None if parameters is None
-            else ExprList(list(map(expression, sems[2])))
+            ID(sem[1]),
+            None if sem[2] is None
+            else ExprList(list(map(expression, sem[2])))
         )
     elif sem[0] == '[]':
         return ArrayRef(expression(sem[1]), expression(sem[2]))
@@ -131,7 +131,8 @@ spec = {
     'declare_func_call_req': {'name': None, 'parameters': 'opt'},
     'declare_func_call_tpl': lambda name, parameters: FuncCall(
         ID(name),
-        None if parameters is None else ExprList(list(map(expression, parameters)))
+        None if parameters is None
+        else ExprList(list(map(expression, parameters)))
     ),
 
     'declare_return_req': {'value': None},
@@ -351,6 +352,38 @@ def find_node(stmt, line, attr):
     return None, False
 
 
+def find_range(stmt, name):
+    '''traverses the ast to find the correct lines to delete'''
+    if stmt is None:
+        return None, False
+    for i in range(len(stmt)):
+        children = []
+        # If
+        if isinstance(stmt[i], If):
+            if stmt[i].iftrue.block_items is not None:
+                children = list(stmt[i].iftrue.block_items)
+            if stmt[i].iffalse is not None:
+                if isinstance(stmt[i].iffalse, If):
+                    children.append(stmt[i].iffalse)
+                elif stmt[i].iffalse.block_items is not None:
+                    children.append(*stmt[i].iffalse.block_items)
+        # For and While
+        elif isinstance(stmt[i], For) or isinstance(stmt[i], While):
+            children = stmt[i].stmt.block_items
+        # FuncDef
+        elif isinstance(stmt[i], FuncDef):
+            children = stmt[i].body.block_items
+        rng, found = find_range(children, name)
+        if found:
+            return rng, found
+
+        if hasattr(stmt[i], 'decl') and stmt[i].decl.name == name or\
+           isinstance(stmt[i], Decl) and stmt[i].name == name:
+                return (coord_first_line(stmt[i]),
+                        coord_last_line(stmt[i])), True
+    return None, False
+
+
 def req_checker(name, sem):
     req = spec[name + '_req']
     tpl = spec[name + '_tpl']
@@ -439,14 +472,29 @@ def generate_code(sems, filename, line):
             if 'error' in codes[0]:
                 break
         if 'request' not in sem or 'construct' not in sem or\
-           sem['request'] not in ['declare', 'add', 'include']:
-            if 'request' in sem and sem['request'] in ['navigate', 'edit']:
+           sem['request'] not in ['declare', 'add', 'include', 'edit']:
+            if 'request' in sem and sem['request'] in ['navigate']:
                 codes.append(sem)
             else:
                 codes.append({'output': 'UnknownReqError' + '\n' + str(sem),
                               'error': 'Could not understand request.\
                                   \nSem : ' + str(sem)})
             continue
+
+        # editing
+        if sem['request'] == 'edit':
+            if 'name' in sem:
+                rng, found = find_range(ast.ext, sem['name'])
+            if rng is None:
+                error = {'error': 'could not find name'}
+                codes.append(error)
+            else:
+                if rng[0] == rng[1]:
+                    rng = (rng[0], )
+                sem['value'] = rng
+                codes.append(sem)
+            continue
+
         new_ext = deepcopy(ast.ext)
         new_fmt = deepcopy(fmt)
         coord, node = handle_req(new_ext, new_fmt, sem, line)
@@ -473,8 +521,8 @@ def get_scope_variables():
 
 if __name__ == '__main__':
     codes = generate_code(
-        [{'request': 'add', 'construct': 'parameter',
-          'name': 'argc', 'type': 'int', 'position': 1}],
+        [{'request': 'edit', 'construct': 'delete',
+          'name': 'x', 'e_type': 'function'}],
         'hello.c',
         4
     )

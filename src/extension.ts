@@ -116,7 +116,34 @@ class Codac {
 		} catch (error) {
 			let obj2 = {'input': 'NavError', 'Output':'Navigation Error'};
 			this.handleError(Object.assign({}, error, obj2));
-			}
+		}
+	}
+
+	public async edit(sem: any) {
+		let curCursorPos: vscode.Position;
+		switch (sem['construct']) {
+			case 'undo':
+				vscode.commands.executeCommand('undo');
+				break;
+			case 'redo':
+				vscode.commands.executeCommand('redo');
+				break;
+			case 'copy':
+				curCursorPos = this.editor.getCursorPosition();
+				this.editor.selectLines(sem['value'], sem['direction'], sem['is_range']);
+				await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
+				this.editor.moveCursor(curCursorPos);
+				break;
+			case 'paste':
+				vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+				break;
+			case 'delete':
+				curCursorPos = this.editor.getCursorPosition();
+				this.editor.selectLines(sem['value'], sem['direction'], sem['is_range']);
+				await vscode.commands.executeCommand('editor.action.deleteLines');
+				this.editor.moveCursor(curCursorPos);
+				break;
+		}
 	}
 
 	// append to errors tree
@@ -125,7 +152,7 @@ class Codac {
 		let idx = tree.getLength() + 1;
 		let treeData = [{'error': (`${idx}. ${message}`), 'children': []}];
         tree.updateTree(treeData);
-    }
+	}
 	
 	public async handleError(sem: any) {
 		if (sem.hasOwnProperty('input')) {
@@ -138,6 +165,13 @@ class Codac {
 		if (sem.hasOwnProperty('error')) {
 			this.insertError(sem.error);
 		}
+		child_process.exec(
+			`python ${__dirname}/play_sound.py ${__dirname}/../media/${sem.output}.mp3`,
+			{},
+			function (err) {
+				console.log(err);
+			}
+		);
     }
 	
 	public async handleOutput(tree: SampleTree, data: any) {
@@ -161,7 +195,9 @@ class Codac {
 				return;
 			} else if (JSONdata[1].hasOwnProperty('request') && JSONdata[1]['request'] === 'navigate') {
 				self.navigate(JSONdata[1]);
-			} else{
+			} else if (JSONdata[1].request === 'edit') {
+				self.edit(JSONdata[1]);
+			} else {
 				treeData[0].children = JSONdata.slice(1).map(
 					(elem: any, idx: number) => {
 						return {'output': `${idx + 1}. ${elem.output}`,
@@ -170,7 +206,7 @@ class Codac {
 								children: []};
 					}
 				);
-				await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);	
+				await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);
 			}
 			tree.setTree(treeData);
 		}
@@ -201,7 +237,7 @@ class Codac {
 		let tree: SampleTree;
 		options = {
 			'audio': [
-				`${__dirname}/audio.py`,
+				`${__dirname}/tts_test.py`,
 			 	`${self.editor.getFileName()}`,
 			 	`${self.editor.getCursorPosition().line + 1}`
 			],
@@ -355,6 +391,7 @@ class Editor {
 			const editor = vscode.window.activeTextEditor;
 			var newSelection = new vscode.Selection(position, position);
 			editor.selection = newSelection;
+			editor.selections = [newSelection];
 		}
 	}
 
@@ -373,5 +410,60 @@ class Editor {
 			return editor.document.uri.fsPath;
 		}
 		return '';
+	}
+
+	public addSelection(selection: vscode.Selection) {
+		if (vscode.window.activeTextEditor) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor.selection.isEmpty) {
+				editor.selection = selection;
+			} else {
+				console.log(editor.selections);
+				let selections = editor.selections;
+				selections.push(selection);
+				editor.selections = selections;
+				console.log(editor.selections);
+			}
+		}
+	}
+
+	public getLineRange(line: number): vscode.Range {
+		if (vscode.window.activeTextEditor) {
+			const editor = vscode.window.activeTextEditor;
+			return editor.document.lineAt(line).range;
+		}
+		const pos = new vscode.Position(0, 0);
+		return new vscode.Range(pos, pos);
+	}
+
+	public selectLines(val: number[], direction: string, is_range: boolean) {
+		if (is_range) {
+			let newVal = [];
+			for (var i = val[0]; i <= val[1]; ++i) {
+				newVal.push(i);
+			}
+			val = newVal;
+		}
+		if (direction) {
+			let line = this.getCursorPosition().line + 1;
+			switch(direction) {
+				case 'current':
+					val = [line]
+					break;
+				case 'next':
+					val = [line + 1]
+					break;
+				case 'previous':
+				case 'last':
+					val = [line - 1]
+
+			}
+		}
+		val.forEach((elem: number) => {
+			let range = this.getLineRange(elem - 1);
+			this.addSelection(
+				new vscode.Selection(range.start, range.end)
+			);
+		});
 	}
 }
