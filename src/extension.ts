@@ -146,6 +146,29 @@ class Codac {
 		}
 	}
 
+	public async execute(sem: any) {
+		let filename: string = this.editor.getFileName();
+		let lastIndex = filename.lastIndexOf('\\');
+		if (lastIndex == -1) {
+			lastIndex = filename.lastIndexOf('/');
+		}
+		let options = {cwd: (filename.slice(0, lastIndex))};
+		console.log(options);
+		let terminal: vscode.Terminal = vscode.window.createTerminal(
+			options
+		);
+		filename = filename.replace(/^.*[\\\/]/, '').slice(0, -2);
+		terminal.show(true);
+		if (sem['construct'] === '0') {
+			terminal.sendText(`gcc ${filename}.c -o ${filename}`, true);
+			terminal.sendText(`${filename}.exe`, true);
+		} else if (sem['construct'] === '1') {
+			terminal.sendText(`gcc ${filename}.c -o ${filename}`, true);
+		} else {
+			terminal.sendText(`${filename}.exe`, true);
+		}
+	}
+
 	// append to errors tree
 	public insertError(message: string) {
 		let tree = this.errorTree;
@@ -197,6 +220,8 @@ class Codac {
 				self.navigate(JSONdata[1]);
 			} else if (JSONdata[1].request === 'edit') {
 				self.edit(JSONdata[1]);
+			} else if (JSONdata[1].request === 'execute') {
+				self.execute(JSONdata[1])
 			} else {
 				treeData[0].children = JSONdata.slice(1).map(
 					(elem: any, idx: number) => {
@@ -212,7 +237,7 @@ class Codac {
 		}
 	}
 
-	public printDictationOp(){
+	public printDictationOp() {
 		let childrenLabel = this.dictateTree.getChildren(undefined).map(
 			(child) => child.label
 		);
