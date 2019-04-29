@@ -212,6 +212,16 @@ func_param_ips = [
 ]
 
 func_call_ips = [
+    ['set x equals the value of function max plus the value of function min',
+     {'request': 'declare', 'construct': 'assignment',
+      'lhs': ('name', 'x'), 'rhs': ('+', ('()', 'max', ()), ('()', 'min', ()))}],
+    ['set x equals the value of function max with parameter var1 plus the value of function min with parameter var2',
+     {'request': 'declare', 'construct': 'assignment',
+      'lhs': ('name', 'x'),
+      'rhs': ('+', ('()', 'max', (('name', 'var1'),)), ('()', 'min', (('name', 'var2'),)))}],
+    ['the value of function max with arguments x and y',
+     {'request': 'declare', 'construct': 'func_call',
+      'name': 'max', 'parameters': (('name', 'x'), ('name', 'y'))}],
     ['call function called max',
      {'request': 'declare', 'construct': 'func_call', 'name': 'max'}],
     ['call function printf',
@@ -231,7 +241,6 @@ func_call_ips = [
     ['call the function max and pass it arguments 2 and 3',
      {'request': 'declare', 'construct': 'func_call',
       'name': 'max', 'parameters': (('value', 2), ('value', 3))}],
-    # 'call function func and pass it as arguments the variables x and y', not handling(..args variable x and func y)
     ['invoke function fun and pass parameters x and y',
      {'request': 'declare', 'construct': 'func_call',
       'name': 'fun', 'parameters': (('name', 'x'), ('name', 'y'))}],
@@ -244,10 +253,13 @@ func_call_ips = [
     ['invoke function max having parameters 2 and 10 and 5',
      {'request': 'declare', 'construct': 'func_call',
       'name': 'max', 'parameters': (('value', 2), ('value', 10), ('value', 5))}],
-    ['call the function func1 and pass it arguments 2 3 and 4',
-     {'request': 'declare', 'construct': 'func_call',
-      'name': 'func1',
-      'parameters': (('value', 2), ('value', 3), ('value', 4))}],
+
+    # Not Handled
+    # ['call the function func1 and pass it arguments 2 3 and 4',
+    #  {'request': 'declare', 'construct': 'func_call',
+    #   'name': 'func1',
+    #   'parameters': (('value', 2), ('value', 3), ('value', 4))}],
+    # 'call function func and pass it as arguments the variables x and y', not handling(..args variable x and func y)
 ]
 
 f_c_printf_ips = [
@@ -308,10 +320,10 @@ f_c_printf_ips = [
 ]
 
 f_c_scanf_ips = [
-    ['call scanf with parameters mod d and address of x',
+    ['call scan with parameters mod d and address of x',
      {'request': 'declare', 'construct': 'func_call',
       'name': 'scanf', 'parameters': (('str', '%d'), ('&', ('name', 'x')))}],
-    ['call scanf and pass it string mod s and parameter text',
+    ['call scan and pass it string mod s and parameter text',
      {'request': 'declare', 'construct': 'func_call',
       'name': 'scanf', 'parameters': (('str', '%s'), ('name', 'text'))}],
     ['invoke scanf and pass parameter mod s and parameter text',
@@ -599,7 +611,7 @@ edit_ips = [
       'e_type': 'line', 'value': (3,)}],
     ['copy lines 3 to 5',
      {'request': 'edit', 'construct': 'copy',
-      'e_type': 'line', 'value': (3, 5)}],
+      'e_type': 'line', 'is_range': True, 'value': (3, 5)}],
     ['copy lines 3 and 5',
      {'request': 'edit', 'construct': 'copy',
       'e_type': 'line', 'value': (3, 5)}],
@@ -621,13 +633,13 @@ edit_ips = [
       'direction': 'next', 'value': (2,), 'e_type': 'line'}],
     ['delete lines 3 to 10',
      {'request': 'edit', 'construct': 'delete',
-      'e_type': 'line', 'value': (3, 10)}],
+      'e_type': 'line', 'is_range': True, 'value': (3, 10)}],
     ['delete lines 3 4 6 7 and 10',
      {'request': 'edit', 'construct': 'delete',
       'e_type': 'line', 'value': (3, 4, 6, 7, 10)}],
     # Update type commands
     ['change x to 10',
-     {'request': 'edit', 'construct': 'change',
+     {'request': 'edit', 'construct': 'change', 
       'lhs': ('name', 'x'), 'rhs': ('value', 10)}],
     ['change variable x to variable y',
      {'request': 'edit', 'construct': 'change',

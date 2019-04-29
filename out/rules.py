@@ -203,10 +203,8 @@ func_name_rules = [
     Rule('$Function', 'function', {'construct': 'function'}, 1.0),
     Rule('$Function', ' a function', {'construct': 'function'}, 1.5),
     Rule('$Return', 'return', {}, 1.5),
-    Rule('$Return', 'return ?the value', {}, 1.5),
-    Rule('$Return', 'return ?the value of', {}, 2.0),
     Rule('$Returns', 'returns', {}, 0.5),
-    Rule('$Returns', '$Return', {}, 0.5),
+    Rule('$Returns', '$Return ?$Value', {}, 0.5),
 ]
 
 func_param_rules = [
@@ -255,23 +253,25 @@ func_param_rules = [
 func_call_rules = [
     Rule('$ROOT', '$FuncCall',
          lambda sems: merge_dicts(sems[0], {'request': 'declare'}), 0.0),
-    Rule('$FuncCall',
-         '$Call ?$Optional $PreName ?$FuncCallParaElements',
+    Rule('$FuncCall', '$Call $FunctionCall', itemgetter(1), 0.0),
+    Rule('$FuncCall', '$Value $FunctionCall', itemgetter(1), -0.1),
+    Rule('$FunctionCall',
+         '?$Optional $PreName ?$FuncCallParaElements',
          lambda sems: merge_dicts(
-            {'construct': 'func_call', 'name': sems[2]['name']},
-            sems[3]), 1.5),
+            {'construct': 'func_call', 'name': sems[1]['name']},
+            sems[2]), 1.5),
 
     Rule('$FuncCallParaElements',
          '$Optionals ?$Pass $Parameters $FuncCallParaElements',
          lambda sems: {'parameters': (*sems[3]['parameters'],)}, 0.0),
     Rule('$FuncCallParaElements',
-         '$FuncCallParaElement ?$Joins $FuncCallParaElements',
+         '$FuncCallParaElement $Joins $FuncCallParaElements',
          lambda sems: {'parameters': (sems[0], *sems[2]['parameters'])}, 1.0),
     Rule('$FuncCallParaElements', '$FuncCallParaElement',
          lambda sems: {'parameters': (sems[0],)}, 0.5),
 
     Rule('$FuncCallParaElement', '$Exp', itemgetter(0), 0.5),
-    Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 0.5),
+    # Rule('$FuncCallParaElement', '$FuncCall', itemgetter(0), 0.5),
 
     Rule('$Call', 'call', {}, 0.0),
     Rule('$Call', 'invoke', {}, 0.0),
@@ -280,6 +280,10 @@ func_call_rules = [
     Rule('$Pass', 'pass ?it', {}, 0.5),
     Rule('$Pass', 'give ?it', {}, 0.5),
     Rule('$Function', 'function', {}, 0.5),
+
+
+    Rule('$Value', 'the value', {}, 0.5),
+    Rule('$Value', 'the value of', {}, 0.75),
 ]
 
 add_fn_call_rules = [
@@ -303,7 +307,7 @@ add_fn_call_rules = [
          lambda sems: {'parameters': (('str', sems[0]), sems[4])}, 1.0),
     Rule('$FuncParameter', '$StringText',
          lambda sems: {'parameters': (('str', sems[0]),)}, 0.5),
-    
+
     Rule('$PreString', '?$Optional ?$Type $String ?$Type ?$PreFnName', {}, 1.0),
     Rule('$FnCallType', 'printf', 'printf', 1.5),
     Rule('$FnCallType', 'print f', 'printf', 1.5),
@@ -482,28 +486,45 @@ exp_rules = [
     Rule('$ROOT', '$Exp', lambda sems: {'exp': sems[0]}),
     Rule('$Exp', '$UnOp $Exp', lambda sems: (sems[0], sems[1])),
     Rule('$Exp', '$Exp $UnOp', lambda sems: ('p' + sems[1], sems[0])),
-    Rule('$Exp', '$Exp $BinOp $Exp', lambda sems: (sems[1], sems[0], sems[2])),
+    Rule('$Exp', '$Exp $BinOp $Exp', lambda sems: (sems[1], sems[0], sems[2]), 1.0),
     Rule('$Exp', '$Number', lambda sems: ('value', sems[0]), 0.5),
     Rule('$Exp', '$VariableName', lambda sems: ('name', sems[0]['name'])),
+    Rule('$Exp', '$FuncCall', lambda sems: ('()',
+                                            sems[0]['name'],
+                                            sems[0].get('parameters', ()))),
 
-    Rule('$BinOp', 'plus', '+', 0.25),
-    Rule('$BinOp', 'times', '*', 0.25),
-    Rule('$BinOp', 'cross', '*', 0.25),
-    Rule('$BinOp', 'multiplied by', '*', 0.25),
-    Rule('$BinOp', 'minus', '-', 0.25),
+    Rule('$BinOp', '$Plus', '+', 0.25),
+    Rule('$BinOp', '$Multiply', '*', 0.25),
+    Rule('$BinOp', '$Minus', '-', 0.25),
     Rule('$BinOp', 'by', '/', 0.25),
+    Rule('$BinOp', '/', '/', 0.25),
     Rule('$BinOp', 'divided by', '/', 0.25),
-    Rule('$BinOp', 'mod', '%', 0.25),
-    Rule('$BinOp', 'modulo', '%', 0.25),
+    Rule('$BinOp', '$Mod', '%', 0.25),
 
-    Rule('$UnOp', 'minus', '-', 0.25),
+    Rule('$UnOp', '$Minus', '-', 0.25),
     Rule('$UnOp', 'decrement', '--', 0.25),
-    Rule('$UnOp', 'minus minus', '--', 0.6),
+    Rule('$UnOp', '$Minus $Minus', '--', 0.6),
     Rule('$UnOp', 'increment', '++', 0.25),
-    Rule('$UnOp', 'plus plus', '++', 0.6),
+    Rule('$UnOp', '$Plus $Plus', '++', 0.6),
     Rule('$UnOp', 'address ?of', '&', 0.25),
     Rule('$UnOp', 'value at address', '*', 0.25),
     Rule('$UnOp', 'dereference', '*', 0.25),
+
+    Rule('$Plus', '+'),
+    Rule('$Plus', 'plus'),
+    Rule('$Minus', '-'),
+    Rule('$Minus', 'minus'),
+    Rule('$Multiply', '*'),
+    Rule('$Multiply', 'x'),
+    Rule('$Multiply', 'X'),
+    Rule('$Multiply', 'times'),
+    Rule('$Multiply', 'cross'),
+    Rule('$Multiply', 'multiplied by'),
+    Rule('$Mod', '%'),
+    Rule('$Mod', 'mod'),
+    Rule('$Mod', 'modulo'),
+    Rule('$Mod', 'modulus'),
+
 ]
 
 ptr_rules = [
@@ -527,9 +548,9 @@ return_stmt_rules = [
          lambda sems: merge_dicts(sems[1], sems[2]), 1.0),
     Rule('$ReturnElements', '$ReturnValue', itemgetter(0), 0),
 
-    Rule('$ReturnElements', '$Optionals $ReturnFuncElement $ReturnValue',
-         lambda sems: merge_dicts(sems[1], {'value': (sems[2]['value'][0],
-                                            sems[2]['value'][1] + '()')}), 1.0),
+    # Rule('$ReturnElements', '$Optionals $ReturnFuncElement $ReturnValue',
+    #      lambda sems: merge_dicts(sems[1], {'value': (sems[2]['value'][0],
+    #                                         sems[2]['value'][1] + '()')}), 1.0),
 
     Rule('$ReturnElements', '$Null',
          lambda sems: {'value': ('value', 'null')}, 2.5),
