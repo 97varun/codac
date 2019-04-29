@@ -688,7 +688,20 @@ edit_rules = [
     Rule('$Change', 'update', {'construct': 'change'}, 1.0),
     Rule('$PreNum', '$To', {'is_range': True}, 0.0),
     Rule('$PreNum', '$Optional', {}, 0.0),
+]
 
+system_rules = [
+    Rule('$ROOT', '$SysCommandType ?$StringText',
+         lambda sems: merge_dicts({'request': 'systemCommand'}, sems[0])),
+
+    Rule('$SysCommandType', '$Compile', {'construct': '0'}, 1.0),
+    Rule('$SysCommandType', '$Execute', {'construct': '1'}, 1.0),
+    Rule('$SysCommandType', '$Compile ?$Joins $Execute',
+         {'construct': '2'}, 2.0),
+
+    Rule('$Compile', 'compile', {}, 0.0),
+    Rule('$Execute', 'execute', {}, 0.0),
+    Rule('$Execute', 'run', {}, 0.0),
 ]
 
 struct_name_rules = [
@@ -758,7 +771,7 @@ rules_3 = loop_define_rules + loop_init_rules + loop_cond_rules\
 rules_4 = pack_rules + init_rules + data_type_rules + arr_size_rules + \
           cond_rules + exp_rules + return_stmt_rules + if_rules
 #    + struct_name_rules
-rules_5 = nav_rules + edit_rules + optionals + array_index_rules
+rules_5 = nav_rules + edit_rules + system_rules + optionals + array_index_rules
 
 rules = rules_1 + rules_2 + rules_3 + rules_4 + rules_5
 grammar = Grammar(

@@ -659,8 +659,21 @@ additional_ips = [
     # 'exit',
     # 'exit block',
     # 'leave current block',
-    'start dictation',
-    'stop dictation',
+    # 'start dictation',
+    # 'stop dictation',
+    ['compile',
+     {'request': 'systemCommand', 'construct': '0'}],
+    ['compile program',
+     {'request': 'systemCommand', 'construct': '0'}],
+    ['execute',
+     {'request': 'systemCommand', 'construct': '1'}],
+    ['execute the program',
+     {'request': 'systemCommand', 'construct': '1'}],
+    ['compile and execute',
+     {'request': 'systemCommand', 'construct': '2'}],
+    ['compile and execute the program',
+     {'request': 'systemCommand', 'construct': '2'}],
+    
 ]
 
 pack_ips = [
