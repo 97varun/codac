@@ -187,7 +187,11 @@ def add_parameter(stmt, pos, param):
     if stmt.decl.type.args is None:
         stmt.decl.type.args = ParamList([param[0]])
     else:
-        stmt.decl.type.args.params.insert(param[1] - 1, param[0])
+        idx = param[1]
+        if idx is None:
+            idx = len(stmt.decl.type.args.params) + 1
+        idx -= 1
+        stmt.decl.type.args.params.insert(idx, param[0])
     return None, True
 
 
@@ -517,12 +521,12 @@ def generate_code(sems, filename, line):
 def get_scope_variables():
     return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k', 'g', 'h',
             'found', 'element', 'program_count', 'test_case', 'ptr',
-            'abc', 'max', 'sum', 'min', 'date', 'result', 'limit']
+            'abc', 'max', 'sum', 'min', 'date', 'result', 'limit', 'main']
 
 if __name__ == '__main__':
     codes = generate_code(
-        [{'request': 'edit', 'construct': 'delete',
-          'name': 'x', 'e_type': 'function'}],
+        [{'request': 'add', 'construct': 'parameter',
+          'name': 'x', 'type': 'int'}],
         'hello.c',
         4
     )
