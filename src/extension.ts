@@ -149,7 +149,7 @@ class Codac {
 	public async execute(sem: any) {
 		let filename: string = this.editor.getFileName();
 		let lastIndex = filename.lastIndexOf('\\');
-		if (lastIndex == -1) {
+		if (lastIndex === -1) {
 			lastIndex = filename.lastIndexOf('/');
 		}
 		let options = {cwd: (filename.slice(0, lastIndex))};
@@ -220,8 +220,8 @@ class Codac {
 				self.navigate(JSONdata[1]);
 			} else if (JSONdata[1].request === 'edit') {
 				self.edit(JSONdata[1]);
-			} else if (JSONdata[1].request === 'execute') {
-				self.execute(JSONdata[1])
+			} else if (JSONdata[1].request === 'systemCommand') {
+				self.execute(JSONdata[1]);
 			} else {
 				treeData[0].children = JSONdata.slice(1).map(
 					(elem: any, idx: number) => {

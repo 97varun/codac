@@ -477,7 +477,7 @@ def generate_code(sems, filename, line):
                 break
         if 'request' not in sem or 'construct' not in sem or\
            sem['request'] not in ['declare', 'add', 'include', 'edit']:
-            if 'request' in sem and sem['request'] in ['navigate']:
+            if 'request' in sem and sem['request'] in ['navigate', 'systemCommand']:
                 codes.append(sem)
             else:
                 codes.append({'output': 'UnknownReqError' + '\n' + str(sem),
@@ -487,16 +487,17 @@ def generate_code(sems, filename, line):
 
         # editing
         if sem['request'] == 'edit':
+            rng = None
             if 'name' in sem:
                 rng, found = find_range(ast.ext, sem['name'])
-            if rng is None:
-                error = {'error': 'could not find name'}
-                codes.append(error)
-            else:
-                if rng[0] == rng[1]:
-                    rng = (rng[0], )
-                sem['value'] = rng
-                codes.append(sem)
+                if rng is None:
+                    error = {'error': 'could not find name'}
+                    codes.append(error)
+                else:
+                    if rng[0] == rng[1]:
+                        rng = (rng[0], )
+                    sem['value'] = rng
+            codes.append(sem)
             continue
 
         new_ext = deepcopy(ast.ext)
