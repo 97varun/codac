@@ -108,17 +108,22 @@ def listen_print_loop(responses):
         result = response.results[0]
         if not result.alternatives:
             continue
-
+        # print(response)
         # Display the transcription of the top alternative.
-        transcript = result.alternatives[0].transcript
-        return transcript.lower()
+        transcripts = []
+        for alternative in result.alternatives:
+            transcripts.append((alternative.transcript.lower(),
+                                alternative.confidence))
+        transcripts.sort(key=lambda x: x[1], reverse=True)
+        transcripts = list(map(lambda x: x[0], transcripts))
+        return transcripts
 
 
 def main():
-    file = ''
-    line = 0
+    filename = 'hello.c'
+    line = 5
     if len(sys.argv) == 3:
-        file = sys.argv[1]
+        filename = sys.argv[1]
         line = int(sys.argv[2])
 
     os.environ.update({'GOOGLE_APPLICATION_CREDENTIALS':
@@ -132,13 +137,15 @@ def main():
         encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=RATE,
         language_code=language_code,
+        max_alternatives=3,
         speech_contexts=[speech.types.SpeechContext(
             phrases=[
                 # keywords
                 'add', 'declare', 'include', 'stdio', 'function', 'array',
-                'return', 'go', 'goto', 'go to',
+                'return', 'go', 'goto', 'go to', 'paste', 'compile', 'execute',
                 # variable names
                 'a', 'b', 'c', 'i', 'j', 'k', 'x', 'y', 'z', 'found',
+                'function main', 'variable i',
                 # helplessness
                 'condition i less', 'array a at',
             ],
@@ -161,9 +168,8 @@ def main():
         responses = client.streaming_recognize(streaming_config, requests)
 
         # Now, put the transcription responses to use.
-        transcript = listen_print_loop(responses)
-        transcript = transcript.replace('=', 'equals')
-        action = get_action(transcript, file, line)
+        transcripts = listen_print_loop(responses)
+        action = get_action(transcripts, filename, line)
         print(action)
         sys.stdout.flush()
 

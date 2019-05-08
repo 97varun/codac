@@ -158,14 +158,16 @@ class Codac {
 			options
 		);
 		filename = filename.replace(/^.*[\\\/]/, '').slice(0, -2);
+		let compileText = `gcc ${filename}.c -o ${filename}`;
+		let runText = `./${filename}`;
 		terminal.show(true);
 		if (sem['construct'] === '0') {
-			terminal.sendText(`gcc ${filename}.c -o ${filename}`, true);
-			terminal.sendText(`${filename}.exe`, true);
+			terminal.sendText(compileText, true);
 		} else if (sem['construct'] === '1') {
-			terminal.sendText(`gcc ${filename}.c -o ${filename}`, true);
+			terminal.sendText(runText, true);
 		} else {
-			terminal.sendText(`${filename}.exe`, true);
+			terminal.sendText(compileText, true);
+			terminal.sendText(runText, true);
 		}
 	}
 
@@ -211,37 +213,53 @@ class Codac {
 			tree.updateTree(treeData);
 		} else{
 			// [{"input": "..."}, {"output": "...", "replace": "..."}, ...]
-			// [{"input": "..."}, {"error": "..."}]
-			let treeData: any = [{...JSONdata[0], children: []}];
-			if (JSONdata[1].hasOwnProperty('error')) {
-				this.handleError(Object.assign({}, JSONdata[0], JSONdata[1]));
-				return;
-			} else if (JSONdata[1].hasOwnProperty('request') && JSONdata[1]['request'] === 'navigate') {
-				self.navigate(JSONdata[1]);
-			} else if (JSONdata[1].request === 'edit') {
-				self.edit(JSONdata[1]);
-			} else if (JSONdata[1].request === 'systemCommand') {
-				self.execute(JSONdata[1]);
-			} else {
-				treeData[0].children = JSONdata.slice(1).map(
-					(elem: any, idx: number) => {
-						return {'output': `${idx + 1}. ${elem.output}`,
-								'replace': elem.replace,
-								'cursor': elem.cursor,
-								children: []};
+			// [{"input": "..."}, {"error": "...", "output": "..."}]
+			let treeData: any = JSONdata;
+			let idx: number = 1;
+			for (var i = 0; i < treeData.length; ++i) {
+				if (treeData[i].hasOwnProperty('error')) {
+					self.insertError(treeData[i].error);
+					treeData[i] = {
+						input: treeData[i].input,
+						children: [{output: `${treeData[i].output}`}],
+					};
+					continue;
+				}
+				let children = treeData[i].children;
+				for (var j = 0; j < children.length; ++j) {
+					if (children[j].request === 'navigate') {
+						self.navigate(children[j]);
+					} else if (children[j].request === 'edit') {
+						self.edit(children[j]);
+					} else if (children[j].request === 'systemCommand') {
+						self.execute(children[j]);
+					} else if (children[j].hasOwnProperty('error')) {
+						self.insertError(children[j].error);
+						treeData[i].children[j] = {
+							output: `${idx}. ${children[j].output}`,
+						};
+					} else {
+						treeData[i].children[j] = {
+							output: `${idx}. ${children[j].output}`,
+							replace: children[j].replace,
+							cursor: children[j].cursor,
+						};
 					}
-				);
-				await self.replaceCode(JSONdata[1]['replace'], JSONdata[1]['cursor']);
+					++idx;
+					treeData[i].children[j] = {...treeData[i].children[j], children: []};
+				}
 			}
+			await self.replaceCode(JSONdata[0].children[0]['replace'], JSONdata[0].children[0]['cursor']);
 			tree.setTree(treeData);
 		}
 	}
 
 	public printDictationOp() {
-		let childrenLabel = this.dictateTree.getChildren(undefined).map(
-			(child) => child.label
+		let childrenOutput = this.dictateTree.getChildren(undefined).map(
+			(child) => child.output
 		);
-		let stringToInsert = childrenLabel.slice(1).join(' ');
+		console.log(childrenOutput);
+		let stringToInsert = childrenOutput.slice(1).join(' ');
 		this.editor.insertText(stringToInsert);
 	}
 
@@ -276,7 +294,7 @@ class Codac {
 			self.setStatusBarBtn('✖️️ Stop', 'extension.stop');
 		} else {
 			tree = this.dictateTree;
-			let treeData = [{input: 'Your String:', children: []}]
+			let treeData = [{input: 'Your String:', children: []}];
 			tree.setTree(treeData);
 			self.setStatusBarBtn('✖️️ Stop Dictation', 'extension.dictation');
 		}
@@ -355,7 +373,7 @@ class SampleTree implements vscode.TreeDataProvider<vscode.TreeItem> {
 					command: 'extension.replace',
 					title: '',
 					arguments: [element.replace, element.cursor]
-				}
+				};
 			}
 		} else if (element.hasOwnProperty('input')) {
 			treeItem.label = element.input;
@@ -473,14 +491,14 @@ class Editor {
 			let line = this.getCursorPosition().line + 1;
 			switch(direction) {
 				case 'current':
-					val = [line]
+					val = [line];
 					break;
 				case 'next':
-					val = [line + 1]
+					val = [line + 1];
 					break;
 				case 'previous':
 				case 'last':
-					val = [line - 1]
+					val = [line - 1];
 
 			}
 		}

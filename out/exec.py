@@ -491,7 +491,8 @@ def generate_code(sems, filename, line):
             if 'name' in sem:
                 rng, found = find_range(ast.ext, sem['name'])
                 if rng is None:
-                    error = {'error': 'could not find name'}
+                    error = {'error': 'could not find name',
+                             'output': 'NameNotFoundError'}
                     codes.append(error)
                 else:
                     if rng[0] == rng[1]:
