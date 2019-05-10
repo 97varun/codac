@@ -257,7 +257,6 @@ class Codac {
 						treeData[i].children[j] = {
 							output: `${idx}. ${children[j].output}`,
                         };
-                        this.playErrorMsg(children[j]);
 					} else {
 						treeData[i].children[j] = {
 							output: `${idx}. ${children[j].output}`,
@@ -271,7 +270,12 @@ class Codac {
                 if (dontContinue) {
                     break;
                 }
-			}
+            }
+            if (treeData[0].hasOwnProperty('error')) {
+                this.playErrorMsg(treeData[0]);
+            } else if (treeData[0].children[0].hasOwnProperty('error')) {
+                this.playErrorMsg(treeData[0].children[0]);
+            }
 			await self.replaceCode(JSONdata[0].children[0]['replace'], JSONdata[0].children[0]['cursor']);
 			tree.setTree(treeData);
 		}
