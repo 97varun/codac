@@ -223,6 +223,11 @@ class Codac {
 			// [{"input": "..."}, {"output": "...", "replace": "..."}, ...]
 			// [{"input": "..."}, {"error": "...", "output": "..."}]
             let treeData: any = JSONdata;
+            if (treeData[0].hasOwnProperty('error')) {
+                this.playErrorMsg(treeData[0]);
+            } else if (treeData[0].children[0].hasOwnProperty('error')) {
+                this.playErrorMsg(treeData[0].children[0]);
+            }
             this.errorTree.setTree([]);
             let idx: number = 1;
             let dontContinue = false;
@@ -271,11 +276,6 @@ class Codac {
                     break;
                 }
             }
-            if (treeData[0].hasOwnProperty('error')) {
-                this.playErrorMsg(treeData[0]);
-            } else if (treeData[0].children[0].hasOwnProperty('error')) {
-                this.playErrorMsg(treeData[0].children[0]);
-            }
 			await self.replaceCode(JSONdata[0].children[0]['replace'], JSONdata[0].children[0]['cursor']);
 			tree.setTree(treeData);
 		}
@@ -307,7 +307,7 @@ class Codac {
 		let tree: SampleTree;
 		options = {
 			'audio': [
-				`${__dirname}/audio.py`,
+				`${__dirname}/tts_test.py`,
 			 	`${self.editor.getFileName()}`,
 			 	`${self.editor.getCursorPosition().line + 1}`
 			],
