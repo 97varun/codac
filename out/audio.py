@@ -143,11 +143,12 @@ def main():
                 # keywords
                 'add', 'declare', 'include', 'stdio', 'function', 'array',
                 'return', 'go', 'goto', 'go to', 'paste', 'compile', 'execute',
+                'loop', 'variable', 'move to', 'loop variable',
                 # variable names
-                'a', 'b', 'c', 'i', 'j', 'k', 'x', 'y', 'z', 'found',
-                'function main', 'variable i',
+                'a', 'b', 'c', 'i', 'j', 'k', 'x', 'y', 'z', 'found', 'main',
+                'function main', 'function called main', 'variable i',
                 # helplessness
-                'condition i less', 'array a at',
+                'condition i less', 'array a at', 'modulus d'
             ],
         )],
         model='command_and_search',
@@ -169,6 +170,8 @@ def main():
 
         # Now, put the transcription responses to use.
         transcripts = listen_print_loop(responses)
+        for i in range(len(transcripts)):
+            transcripts[i] = transcripts[i].replace('=', 'equals')
         action = get_action(transcripts, filename, line)
         print(action)
         sys.stdout.flush()

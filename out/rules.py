@@ -150,6 +150,7 @@ var_name_rules = [
     Rule('$PreVariable', 'pointer', {'modifier': 'pointer'}, 0.5),
     Rule('$PreVariable', 'called', {}, 0.5),
     Rule('$PreVariable', 'name', {}, 0.5),
+    Rule('$PreVariable', 'the', {}, 0.5),
     Rule('$PreVariable', '$PrePackName', {'construct': 'package'}, 0.5),
     Rule('$Variable', 'variable', {}),
 ]
@@ -246,6 +247,7 @@ func_param_rules = [
     Rule('$Parameters', 'parameters', {}, 1.0),
     Rule('$Parameters', 'arguments', {}, 1.0),
     Rule('$Parameters', '$Parameter', {}, 0.0),
+#     Rule('$Parameter', '$Parameters', {}, 0.0),
     Rule('$Parameter', 'parameter', {}, 1.0),
     Rule('$Parameter', 'argument', {}, 1.0),
 ]
@@ -629,8 +631,11 @@ nav_rules = [
 
     Rule('$JumpAmount', '?$Num $NumType', itemgetter(1), 0),
 
-    Rule('$Nav', 'go ?to', {}, 1.0),
-    Rule('$Nav', 'goto', {}, 1.0),
+    Rule('$Nav', '$NavType ?$To', {}, 0.0),
+    Rule('$NavType', 'go', {}, 1.0),
+    Rule('$NavType', 'goto', {}, 1.0),
+    Rule('$NavType', 'move', {}, 1.0),
+    Rule('$NavType', 'jump', {}, 1.0),
     Rule('$Num', 'number', {}, 0.5),
     Rule('$Num', 'numbers', {}, 0.5),
 

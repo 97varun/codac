@@ -29,7 +29,8 @@ sleep(4)
 print(json.dumps([
     {'input': 'declare integer x'},
     {'output': 'int x', 'replace': 'int main() {int x;}', 'cursor': 1},
-    {'output': 'int ex', 'replace': 'int main() {int ex;}', 'cursor': 1}
+    {'output': 'int ex', 'replace': 'int main() {int ex;}', 'cursor': 1},
+    {'output': 'UnknowReqError', 'error': 'could not undrestand request'},
 ]))
 sys.stdout.flush()
 sleep(4)

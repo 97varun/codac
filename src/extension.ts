@@ -14,7 +14,9 @@ export function activate(context: vscode.ExtensionContext) {
 		codac.dictate();
 	});
 	let replace = vscode.commands.registerCommand('extension.replace', (replace, cursor) => {
-		codac.replaceCode(replace, cursor);
+        codac.replaceCode(replace, cursor);
+        codac.stopRecognizer();
+        codac.startRecognizer('audio');
 	});
 
 	context.subscriptions.push(listen);
@@ -25,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-class Codac {	
+class Codac {
 	private statusBarItem: vscode.StatusBarItem;
 	private suggestTree: SampleTree; 
 	private dictateTree: SampleTree;
@@ -114,7 +116,7 @@ class Codac {
 				});
 			}
 		} catch (error) {
-			let obj2 = {'input': 'NavError', 'Output':'Navigation Error'};
+			let obj2 = {'input': 'NavError', 'Output':'Navigation Error', 'id':'NavError'};
 			this.handleError(Object.assign({}, error, obj2));
 		}
 	}
@@ -134,14 +136,15 @@ class Codac {
 				await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
 				this.editor.moveCursor(curCursorPos);
 				break;
-			case 'paste':
+            case 'paste':
+                this.editor.insertText('\n', false);
 				vscode.commands.executeCommand('editor.action.clipboardPasteAction');
 				break;
 			case 'delete':
 				curCursorPos = this.editor.getCursorPosition();
 				this.editor.selectLines(sem['value'], sem['direction'], sem['is_range']);
 				await vscode.commands.executeCommand('editor.action.deleteLines');
-				this.editor.moveCursor(curCursorPos);
+				this.editor.moveCursor(new vscode.Position(curCursorPos.line - 1, curCursorPos.character));
 				break;
 		}
 	}
@@ -178,7 +181,18 @@ class Codac {
 		let treeData = [{'error': (`${idx}. ${message}`), 'children': []}];
         tree.updateTree(treeData);
 	}
-	
+    
+    public async playErrorMsg(sem: any) {
+        let filename = sem.output;
+		child_process.exec(
+			`python ${__dirname}/play_sound.py ${__dirname}/../media/${filename}.mp3`,
+			{},
+			function (err) {
+				console.log(err);
+			}
+		);	
+    }
+
 	public async handleError(sem: any) {
 		if (sem.hasOwnProperty('input')) {
 			let treeData: any = [{'input': `${sem.input}`, 'children': []}];
@@ -190,13 +204,7 @@ class Codac {
 		if (sem.hasOwnProperty('error')) {
 			this.insertError(sem.error);
 		}
-		child_process.exec(
-			`python ${__dirname}/play_sound.py ${__dirname}/../media/${sem.output}.mp3`,
-			{},
-			function (err) {
-				console.log(err);
-			}
-		);
+
     }
 	
 	public async handleOutput(tree: SampleTree, data: any) {
@@ -214,8 +222,10 @@ class Codac {
 		} else{
 			// [{"input": "..."}, {"output": "...", "replace": "..."}, ...]
 			// [{"input": "..."}, {"error": "...", "output": "..."}]
-			let treeData: any = JSONdata;
-			let idx: number = 1;
+            let treeData: any = JSONdata;
+            this.errorTree.setTree([]);
+            let idx: number = 1;
+            let dontContinue = false;
 			for (var i = 0; i < treeData.length; ++i) {
 				if (treeData[i].hasOwnProperty('error')) {
 					self.insertError(treeData[i].error);
@@ -229,10 +239,19 @@ class Codac {
 				for (var j = 0; j < children.length; ++j) {
 					if (children[j].request === 'navigate') {
 						self.navigate(children[j]);
+                        children[j].output = 'navigate';
+                        dontContinue = true;
+						break;
 					} else if (children[j].request === 'edit') {
 						self.edit(children[j]);
+                        children[j].output = 'edit';
+                        dontContinue = true;
+						break;
 					} else if (children[j].request === 'systemCommand') {
 						self.execute(children[j]);
+                        children[j].output = 'systemCommand';
+                        dontContinue = true;
+						break;
 					} else if (children[j].hasOwnProperty('error')) {
 						self.insertError(children[j].error);
 						treeData[i].children[j] = {
@@ -247,7 +266,10 @@ class Codac {
 					}
 					++idx;
 					treeData[i].children[j] = {...treeData[i].children[j], children: []};
-				}
+                }
+                if (dontContinue) {
+                    break;
+                }
 			}
 			await self.replaceCode(JSONdata[0].children[0]['replace'], JSONdata[0].children[0]['cursor']);
 			tree.setTree(treeData);
@@ -260,7 +282,7 @@ class Codac {
 		);
 		console.log(childrenOutput);
 		let stringToInsert = childrenOutput.slice(1).join(' ');
-		this.editor.insertText(stringToInsert);
+		this.editor.insertText(stringToInsert, false);
 	}
 
 	public async replaceCode(statement: string, cursor: number) {
@@ -268,7 +290,7 @@ class Codac {
 		if (statement) {
 			await vscode.commands.executeCommand('editor.action.selectAll');
 			// await vscode.commands.executeCommand('editor.action.deleteLines');
-			await self.editor.insertText(statement);
+			await self.editor.insertText(statement, true);
 			await self.editor.moveCursor(new vscode.Position(cursor - 1, 0));
 			await vscode.commands.executeCommand('cursorEnd');				
 		}
@@ -330,7 +352,6 @@ class Codac {
 			console.log(data);
 			self.insertError('On Recognizer stderr :' + data.toString());
 		});
-
 	}
 
 	public stopRecognizer() {
@@ -406,11 +427,16 @@ class Editor {
 
 	}
 
-	public insertText(text: string) {
+	public insertText(text: string, replace: boolean) {
 		if (vscode.window.activeTextEditor !== undefined) {
 			let pos = new vscode.Position(0, 0);
 			const editor = vscode.window.activeTextEditor;
-			if (editor.selection.isEmpty) {
+			if (replace) {
+				console.log('replacing');
+				let invalidRange = new vscode.Range(0, 0, editor.document.lineCount, 0);
+				let fullRange = editor.document.validateRange(invalidRange);
+				editor.edit(editBuilder => editBuilder.replace(fullRange, text));
+			} else if (editor.selection.isEmpty) {
 				console.log('insertText: insert');
 				pos = editor.selection.active;
 				editor.edit(
@@ -503,10 +529,15 @@ class Editor {
 			}
 		}
 		val.forEach((elem: number) => {
-			let range = this.getLineRange(elem - 1);
-			this.addSelection(
-				new vscode.Selection(range.start, range.end)
-			);
+			try {
+				let range = this.getLineRange(elem - 1);
+				this.addSelection(
+					new vscode.Selection(range.start, range.end)
+				);
+			}
+			catch {
+				console.log('invalid line');
+			}
 		});
 	}
 }

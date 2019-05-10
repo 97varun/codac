@@ -26,7 +26,8 @@ def get_uniq_sems(transcript):
         score_parses(parses)
     else:
         return {'input': transcript, 'output': 'ParseError',
-                'error': 'Could not generate parse of the input'}
+                'error': 'Could not generate parse of the input',
+                'id': 'ParseError'}
     parses.sort(key=lambda x: (x.semantics['score']),
                 reverse=True)
 

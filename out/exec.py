@@ -398,6 +398,7 @@ def req_checker(name, sem):
             if req[elem] is None:
                 msg = '{0} missing'.format(elem)
                 err = {'output': 'Error: ' + msg + '\n' + str(sem),
+                       'id': '{0}_missing'.format(elem),
                        'error': 'Could not generate output.\
                            \nMissing Field: ' + elem}
                 return err
@@ -429,8 +430,9 @@ def handle_req(ext, fmt, sem, line):
         coord, found = find_node(ext, line, {'method': req_type, 'arg': node})
         # error: could not find node to insert at
         if found is False:
-            err = {'output': 'ASTInsertErr' + '\n' + str(sem),
-                   'Error': 'Could not insert into the A. S. T.'}
+            err = {'output': 'ASTInsertError' + '\n' + str(sem),
+                   'Error': 'Could not insert into the A. S. T.',
+                   'id': 'ASTInsertError'}
             return coord, err
     if coord is None:
         coord = Coord('file', line, 0)
@@ -482,7 +484,7 @@ def generate_code(sems, filename, line):
             else:
                 codes.append({'output': 'UnknownReqError' + '\n' + str(sem),
                               'error': 'Could not understand request.\
-                                  \nSem : ' + str(sem)})
+                                  \nSem : ' + str(sem), 'id': 'UnknownReqError'})
             continue
 
         # editing
@@ -492,7 +494,8 @@ def generate_code(sems, filename, line):
                 rng, found = find_range(ast.ext, sem['name'])
                 if rng is None:
                     error = {'error': 'could not find name',
-                             'output': 'NameNotFoundError'}
+                             'output': 'NameNotFoundError',
+                             'id': 'NameNotFoundError'}
                     codes.append(error)
                 else:
                     if rng[0] == rng[1]:
@@ -523,7 +526,8 @@ def generate_code(sems, filename, line):
 def get_scope_variables():
     return ['a', 'b', 'c', 'd', 'x', 'y', 'z', 'i', 'j', 'k', 'g', 'h',
             'found', 'element', 'program_count', 'test_case', 'ptr',
-            'abc', 'max', 'sum', 'min', 'date', 'result', 'limit', 'main']
+            'abc', 'max', 'sum', 'min', 'date', 'result', 'limit', 'main',
+            'first_number', 'second_number', 'key', 'elements', 'idx']
 
 if __name__ == '__main__':
     codes = generate_code(

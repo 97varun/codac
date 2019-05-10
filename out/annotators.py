@@ -65,7 +65,10 @@ class StringTextAnnotator(Annotator):
                         tokens[idx] = '%'
                 except ValueError:
                     pass
-        return [('$StringText', ' '.join(tokens))]
+        string_text = ' '.join(tokens)
+        string_text = string_text.replace('newline', '\\n')
+        string_text = string_text.replace('new line', '\\n')
+        return [('$StringText', string_text)]
 
 
 class NumberAnnotator(Annotator):
@@ -81,6 +84,9 @@ class NumberAnnotator(Annotator):
         types = [int, float]
         try:
             val = w2n.word_to_num(' '.join(tokens))
+            # if w2n.word_to_num(' '.join(tokens[1:])) == val or\
+            #         w2n.word_to_num(' '.join(tokens[:-1])) == val:
+            #     return []
             if type(val) in types:
                 return [('$Number', val)]
         except ValueError:
@@ -101,9 +107,14 @@ class PositionalNumberAnnotator(Annotator):
     def annotate(self, tokens):
         PosNumbers = ['first', 'second', 'third', 'fourth', 'fifth',
                       'sixth', 'seventh', 'eighth', 'nineth', 'tenth']
+        RomanNumbers = ['first', 'ii', 'iii', 'iv', 'v',
+                        'vi', 'vii', 'viii', 'ix', 'x']
         if len(tokens) == 1:
             if tokens[0] in PosNumbers:
                 val = PosNumbers.index(tokens[0]) + 1
+                return [('$PosNum', val)]
+            if tokens[0] in RomanNumbers:
+                val = RomanNumbers.index(tokens[0]) + 1
                 return [('$PosNum', val)]
         return []
 
