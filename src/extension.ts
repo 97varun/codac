@@ -183,7 +183,7 @@ class Codac {
 	}
     
     public async playErrorMsg(sem: any) {
-        let filename = sem.output;
+        let filename = sem.id;
 		child_process.exec(
 			`python ${__dirname}/play_sound.py ${__dirname}/../media/${filename}.mp3`,
 			{},
