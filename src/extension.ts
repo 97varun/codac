@@ -204,7 +204,7 @@ class Codac {
 		if (sem.hasOwnProperty('error')) {
 			this.insertError(sem.error);
 		}
-
+        this.playErrorMsg(sem);
     }
 	
 	public async handleOutput(tree: SampleTree, data: any) {
@@ -256,7 +256,8 @@ class Codac {
 						self.insertError(children[j].error);
 						treeData[i].children[j] = {
 							output: `${idx}. ${children[j].output}`,
-						};
+                        };
+                        this.playErrorMsg(children[j]);
 					} else {
 						treeData[i].children[j] = {
 							output: `${idx}. ${children[j].output}`,
